@@ -7911,7 +7911,7 @@ def upload_sub2api_auth_files(
 
             "ok": False,
 
-            "error": "?????? CPA Auth" if not require_probe else "??????? CPA Auth ???",
+            "error": "没有可推送的 CPA Auth" if not require_probe else "没有通过测活的 CPA Auth 可推送",
 
             "files": 0,
 
@@ -7931,7 +7931,7 @@ def upload_sub2api_auth_files(
 
     except Exception as exc:  # noqa: BLE001
 
-        return {"ok": False, "error": f"???? cpa_to_sub2api: {exc}", "uploaded": 0, "files": 0}
+        return {"ok": False, "error": f"无法加载 cpa_to_sub2api: {exc}", "uploaded": 0, "files": 0}
 
 
 

@@ -6855,14 +6855,14 @@ async def export_accounts_txt(body: ExportAccountsBody):
     """
     emails = _clean_emails(body.emails)
     if body.require_selected and not emails:
-        raise HTTPException(status_code=400, detail="??????")
+        raise HTTPException(status_code=400, detail="请先选择账号")
     lines = await asyncio.to_thread(
         pro_store.export_account_txt_lines,
         emails,
         require_selected=bool(body.require_selected),
     )
     if not lines:
-        raise HTTPException(status_code=404, detail="????????")
+        raise HTTPException(status_code=404, detail="没有可导出的账号")
     ts = time.strftime("%Y%m%d_%H%M%S", time.localtime())
     content = "\n".join(lines) + "\n"
     return Response(

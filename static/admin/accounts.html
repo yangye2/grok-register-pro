@@ -26,13 +26,11 @@
 
   </script>
 
-
-
   <meta charset="utf-8" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-  <title>Grok注册机</title>
+  <title>Grok Register</title>
 
   <script>
 
@@ -160,8 +158,6 @@
 
     }
 
-
-
     html[data-theme="light"] {
 
       color-scheme: light;
@@ -256,8 +252,6 @@
 
     }
 
-
-
     * { box-sizing: border-box; }
 
     html { background: var(--bg); }
@@ -276,8 +270,6 @@
       padding-left: env(safe-area-inset-left, 0px);
       overflow-x: hidden;
     }
-
-
 
     a { color: inherit; text-decoration: none; }
 
@@ -301,8 +293,6 @@
 
     }
 
-
-
     .shell {
 
       display: grid;
@@ -313,8 +303,6 @@
       min-height: 100dvh;
 
     }
-
-
 
     .sidebar {
 
@@ -333,8 +321,6 @@
       background: var(--sidebar);
 
     }
-
-
 
     .brand {
 
@@ -436,8 +422,6 @@
 
     }
 
-
-
     .nav {
 
       display: grid;
@@ -497,8 +481,6 @@
     }
 
     .nav a.active .nav-dot { background: var(--ok); }
-
-
 
     .nav-sep {
 
@@ -596,8 +578,6 @@
 
     }
 
-
-
     .theme-toggle {
 
       width: 100%;
@@ -658,17 +638,11 @@
 
     html[data-theme="light"] .theme-toggle .theme-icon-sun { display: block; }
 
-
-
-
-
     .side-foot {
 
       display: none;
 
     }
-
-
 
     .main {
 
@@ -724,8 +698,6 @@
 
     }
 
-
-
     .db-pill,
 
     .badge {
@@ -760,25 +732,17 @@
 
     .badge.bad { color: var(--bad); border-color: rgba(185, 130, 130, .34); background: rgba(185, 130, 130, .08); }
 
-
-
     .content {
 
       width: 100%;
-
-      max-width: 1440px;
 
       padding: 22px 24px 28px;
 
     }
 
-
-
     .view { display: none; }
 
     .view.active { display: block; }
-
-
 
     body.auth-pending .shell,
 
@@ -876,8 +840,6 @@
 
     }
 
-
-
     .grid {
 
       display: grid;
@@ -911,8 +873,6 @@
       margin-top: 0;
 
     }
-
-
 
     .section {
 
@@ -965,8 +925,6 @@
     }
 
     .section-body { padding: 16px; }
-
-
 
     .register-layout {
 
@@ -1033,8 +991,6 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
 
     }
-
-
 
     .form-grid {
 
@@ -1103,8 +1059,6 @@
     }
 
     input::placeholder, textarea::placeholder { color: var(--placeholder); }
-
-
 
     .field-note {
 
@@ -1256,8 +1210,6 @@
 
     }
 
-
-
     .actions {
 
       display: flex;
@@ -1332,8 +1284,6 @@
     .btn.ghost { background: transparent; }
     .btn.ghost:hover { background: var(--btn-hover); }
     .btn.block { width: 100%; }
-
-
 
     .terminal {
 
@@ -1447,8 +1397,6 @@
 
     }
 
-
-
     .status-row {
 
       display: flex;
@@ -1481,8 +1429,6 @@
 
     }
 
-
-
     .table-tools {
 
       display: flex;
@@ -1499,20 +1445,26 @@
 
     }
 
-    .accounts-panel { border: 0; background: transparent; }
-
-    .accounts-panel .table-tools { padding: 8px 0 14px; border-bottom: 0; }
-
     .accounts-panel {
-
+      border: 0;
+      background: transparent;
       min-height: calc(100vh - 50px);
-
       display: flex;
-
       flex-direction: column;
-
       font-size: 12px;
-
+      margin: 0;
+      padding: 0 2px 12px;
+      gap: 0;
+    }
+    .accounts-panel .table-tools {
+      padding: 4px 0 12px;
+      margin: 0 0 4px;
+      border-bottom: 0;
+      justify-content: flex-start;
+    }
+    .accounts-panel .section-title {
+      margin: 0;
+      padding: 0;
     }
 
     .accounts-panel .section-title { font-size: 18px; line-height: 1.2; }
@@ -1694,29 +1646,27 @@
     }
 
     .accounts-bottom-actions {
-
       display: flex;
-
       flex-wrap: wrap;
-
       align-items: center;
-
-      justify-content: space-between;
-
-      gap: 10px;
-
+      justify-content: flex-start;
+      gap: 8px 10px;
       padding: 12px 0;
-
       border-bottom: 1px solid var(--line);
-
     }
-
     .accounts-bottom-actions .actions,
-
     .accounts-bottom-actions .pager-actions {
-
-      gap: 7px;
-
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+      margin-left: 0;
+      margin-right: auto;
+    }
+    .accounts-bottom-actions .pager-actions {
+      /* keep selection ops immediately after left tools, not pushed to far right */
+      flex: 0 1 auto;
     }
 
     .export-format-wrap {
@@ -2409,8 +2359,6 @@
 
     .operation-dialog.minimized .operation-head { border-bottom: 0; }
 
-
-
     .toast {
 
       position: fixed;
@@ -2441,8 +2389,6 @@
 
     .toast.show { display: block; }
 
-
-
     @media (max-width: 1100px) {
 
       .grid { grid-template-columns: 1fr; }
@@ -2472,8 +2418,6 @@
       .span-4 { grid-column: 1 / -1; }
 
     }
-
-
 
     @media (max-width: 760px) {
       .shell { grid-template-columns: 1fr; min-height: 100dvh; }
@@ -2555,10 +2499,13 @@
       }
       .accounts-actions .btn,
       .bulk-actions .btn,
-      .pager-actions .btn,
       .section-head .actions .btn {
         flex: 1 1 calc(50% - 8px);
         min-width: 132px;
+      }
+      .pager-actions .btn {
+        flex: 0 0 auto;
+        min-width: auto;
       }
       .accounts-filters {
         display: grid !important;
@@ -2659,14 +2606,401 @@
       input, select, textarea { min-height: 40px; font-size: 16px; }
     }
 
+    /* ===== Unified layout polish ===== */
+    .field-note-mt { margin-top: 8px; }
 
-    /* Ensure wide tables can scroll on mobile without breaking layout */
-    .table-scroll-x {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      max-width: 100%;
+    @media (max-width: 760px) {
+      .sidebar-bottom {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px 4px 4px;
+        border-top: 0;
+      }
+      .sidebar-bottom .theme-toggle,
+      .sidebar-bottom .nav-action {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 120px;
+        margin: 0;
+      }
     }
-    .table-scroll-x table { margin: 0; }
+
+    [hidden], .is-hidden { display: none !important; }
+    .is-disabled { opacity: .45; pointer-events: none; }
+
+    .content {
+      width: 100%;
+      margin: 0 auto;
+      padding: 20px 22px 28px;
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      min-width: 0;
+      overflow: hidden;
+    }
+    .section + .section { margin-top: 14px; }
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+    .section-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 720;
+      color: var(--text-strong);
+    }
+    .section-desc {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .section-body { padding: 16px; }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .link-accent { color: var(--btn-info-text); text-decoration: none; }
+    .link-accent:hover { text-decoration: underline; }
+
+    .callout {
+      line-height: 1.55;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+    }
+    .callout-warn {
+      border-color: rgba(248, 81, 73, .35);
+      background: rgba(248, 81, 73, .08);
+      color: var(--btn-danger-text);
+    }
+
+    .actions-start { justify-content: flex-start; }
+    .field-align-end {
+      display: flex;
+      align-items: flex-end;
+    }
+    .form-subhead-wrap { margin-top: 4px; }
+    .form-subhead {
+      display: block;
+      font-size: 12px;
+      font-weight: 650;
+      color: var(--muted);
+    }
+
+    /* Register */
+    .register-layout {
+      display: grid;
+      grid-template-columns: minmax(440px, 1fr) minmax(360px, .82fr);
+      gap: 14px;
+      align-items: stretch;
+    }
+    .register-form-panel,
+    .register-log-panel { min-width: 0; }
+    .register-log-panel {
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid var(--line);
+      padding-left: 14px;
+    }
+    .mail-settings-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-2);
+      padding: 12px;
+    }
+    .mail-settings-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-strong);
+      margin: 0 0 10px;
+    }
+    .mail-settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .mail-settings-grid > .span-2,
+    .mail-settings-grid > .span-4 { grid-column: 1 / -1; }
+    .outmail-extra-grid { margin: 0; }
+    .mail-settings-grid .outmail-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      align-items: center;
+      padding-top: 2px;
+    }
+    .mail-provider-row select { max-width: 420px; }
+
+    /* Accounts: same card shell as register/settings */
+    .accounts-panel {
+      border: 1px solid var(--line) !important;
+      border-radius: var(--radius) !important;
+      background: var(--panel) !important;
+      box-shadow: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      min-height: 0 !important;
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+      gap: 0;
+    }
+    .accounts-panel > .section-head {
+      flex: 0 0 auto;
+    }
+    .accounts-body {
+      padding: 16px !important;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      min-height: 0;
+    }
+    .accounts-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 10px;
+      margin: 0 0 14px;
+    }
+    .stat-card {
+      min-height: 74px;
+      padding: 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--panel-2);
+    }
+    .stat-label {
+      margin: 0 0 10px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 650;
+    }
+    .stat-value {
+      margin: 0;
+      color: var(--text-strong);
+      font-size: 18px;
+      line-height: 1;
+      font-weight: 760;
+    }
+    .stat-sub {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .accounts-toolbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: end;
+      padding: 0 0 12px;
+      margin: 0 0 4px;
+      border-bottom: 1px solid var(--line);
+    }
+    .accounts-filters,
+    .accounts-actions,
+    .accounts-probe-settings {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .accounts-filters > div { min-width: 118px; }
+    .accounts-filters .search-field { min-width: 240px; flex: 1 1 220px; }
+    .accounts-probe-settings { justify-content: flex-end; }
+    .accounts-probe-settings > div { width: 128px; }
+    .accounts-bottom-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .accounts-bottom-actions .actions,
+    .accounts-bottom-actions .pager-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+      margin: 0;
+    }
+    .accounts-panel input,
+    .accounts-panel select {
+      min-height: 30px;
+      font-size: 12px;
+    }
+    .accounts-panel .summary-row { display: none; }
+    .accounts-panel .terminal.compact {
+      max-height: 110px;
+      min-height: 52px;
+      margin: 10px 0 0;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      background: var(--bg);
+      font-size: 11px;
+    }
+    .accounts-panel .table-wrap {
+      flex: 1 1 260px;
+      min-height: 220px;
+      max-height: min(520px, calc(100vh - 360px));
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+      overflow: auto;
+    }
+    .pager {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+    }
+    .table-tools,
+    .pager-actions,
+    .bulk-actions,
+    .accounts-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .table-tools .btn,
+    .pager-actions .btn,
+    .bulk-actions .btn,
+    .accounts-actions .btn,
+    .accounts-bottom-actions .btn {
+      white-space: nowrap;
+      flex: 0 0 auto;
+      min-height: 30px;
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    /* Settings cards */
+    .settings-section {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--panel);
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .settings-body {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+    .settings-body > .card-block {
+      margin: 0;
+    }
+    .card-block {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: var(--panel-2);
+    }
+    .settings-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 0;
+      border: 0;
+      margin: 0 0 12px;
+    }
+    .settings-card-title {
+      font-size: 13px !important;
+      margin: 0 !important;
+    }
+    .settings-card-title.spaced {
+      margin: 0 0 10px !important;
+    }
+    .settings-card-desc {
+      margin: 4px 0 0 !important;
+      font-size: 12px !important;
+      color: var(--muted);
+      opacity: .9;
+      line-height: 1.45;
+    }
+    .settings-card-note {
+      margin: 8px 0 0 !important;
+      font-size: 12px !important;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .schedule-status-row {
+      margin-top: 10px;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 0;
+      border: 0;
+    }
+    .schedule-log { margin-top: 8px; }
+
+    .header-checks {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 16px;
+      flex: 1 1 auto;
+      min-width: 0;
+      justify-content: flex-end;
+      margin: 0 8px;
+    }
+
+    @media (max-width: 1100px) {
+      .register-layout { grid-template-columns: 1fr; }
+      .register-log-panel {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+        padding-left: 0;
+        padding-top: 14px;
+      }
+      .accounts-toolbar { grid-template-columns: 1fr; }
+      .accounts-probe-settings { justify-content: flex-start; }
+      .accounts-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .content { padding: 12px; }
+      .section-head { padding: 12px; flex-direction: column; align-items: stretch; }
+      .section-body,
+      .accounts-body,
+      .settings-body { padding: 12px !important; }
+      .accounts-stats { grid-template-columns: 1fr 1fr; }
+      .mail-settings-grid { grid-template-columns: 1fr; }
+      .mail-provider-row select { max-width: none; }
+      .accounts-filters {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+      }
+      .accounts-filters .search-field { grid-column: 1 / -1; min-width: 0 !important; }
+      .settings-card-head { align-items: flex-start; }
+      .header-checks { justify-content: flex-start; margin: 0; }
+    }
+
+    @media (max-width: 420px) {
+      .accounts-stats { grid-template-columns: 1fr; }
+      .accounts-filters { grid-template-columns: 1fr !important; }
+    }
 
   </style>
 
@@ -2684,7 +3018,7 @@
 
       <div class="operation-actions">
 
-        <button id="operation-stop" class="btn danger" type="button" style="display:none">停止</button>
+        <button id="operation-stop" class="btn danger is-hidden" type="button">停止</button>
 
         <button id="operation-minimize" class="btn ghost" type="button">最小化</button>
 
@@ -2758,7 +3092,7 @@
 
         <div class="brand-copy">
 
-          <p class="brand-title">Grok注册机</p>
+          <p class="brand-title">Grok Register</p>
 
         </div>
 
@@ -2814,8 +3148,6 @@
 
     </aside>
 
-
-
     <main class="main">
 
       <header class="topbar">
@@ -2834,7 +3166,7 @@
 
           </span>
 
-          <h1 id="page-title">Grok注册机</h1>
+          <h1 id="page-title">Grok Register</h1>
 
           <p id="page-desc"></p>
 
@@ -2843,8 +3175,6 @@
         <span id="db-count" class="db-pill"></span>
 
       </header>
-
-
 
       <div class="content">
 
@@ -2892,142 +3222,96 @@
 
               <div class="form-grid">
 
-                <div>
-
+                <div class="span-4 mail-provider-row">
                   <label for="mail_provider">邮箱服务</label>
-
                   <select id="mail_provider">
-
                     <option value="moemail">MoeMail</option>
-
                     <option value="yyds">YYDS</option>
-
                     <option value="gptmail">GPTMail</option>
-
                     <option value="cfmail">Cloudflare Temp Email</option>
-
                     <option value="duckmail">DuckMail</option>
-
-                    <option value="outmail">Outmail (Outlook)</option>
-
+                    <option value="outmail">Outmail</option>
                   </select>
-
+                  <div class="field-note">选择邮箱服务后，下方展示对应配置</div>
                 </div>
 
-                <div class="mail-field" data-mail-field="base_url">
-
-                  <label id="base_url_label" for="base_url">邮箱服务地址</label>
-
-                  <input id="base_url" placeholder="https://moemail.example.com" />
-
-                  <div id="base_url_note" class="field-note" style="display:none"></div>
-
-                </div>
-
-                <div class="mail-field" data-mail-field="api_key">
-
-                  <label id="api_key_label" for="api_key">API Key</label>
-
-                  <input id="api_key" type="password" autocomplete="off" />
-
-                  <div id="api_key_note" class="field-note" style="display:none"></div>
-
-                </div>
-
-                <div class="mail-field" data-mail-field="domain">
-
-                  <label id="domain_label" for="domain">域名</label>
-
-                  <input id="domain" placeholder="多域名用英文逗号分隔，如 a.com, b.com" spellcheck="false" autocomplete="off" />
-
-                  <div id="domain_note" class="field-note" style="display:none"></div>
-
-                </div>
-
-                <div class="span-2" id="outmail_extra_fields" style="display:none">
-
-                  <div class="form-grid" style="margin:0">
-
-                    <div>
-
-                      <label for="outmail_session_cookie">Outmail Session Cookie</label>
-
-                      <input id="outmail_session_cookie" type="password" placeholder="???? API Key ???/??" autocomplete="off" />
-
+                <div class="span-4 mail-settings-panel" id="mail_settings_panel">
+                  <div class="mail-settings-title" id="mail_settings_title">邮箱配置</div>
+                  <div class="form-grid mail-settings-grid">
+                    <div class="mail-field" data-mail-field="base_url">
+                      <label id="base_url_label" for="base_url">邮箱服务地址</label>
+                      <input id="base_url" placeholder="https://moemail.example.com" />
+                      <div id="base_url_note" class="field-note" hidden></div>
                     </div>
-
-                    <div>
-
-                      <label for="outmail_proxy">Outmail ??</label>
-
-                      <input id="outmail_proxy" placeholder="???? Outmail ??" />
-
+                    <div class="mail-field" data-mail-field="api_key">
+                      <label id="api_key_label" for="api_key">API Key</label>
+                      <input id="api_key" type="password" autocomplete="off" />
+                      <div id="api_key_note" class="field-note" hidden></div>
                     </div>
-
-                    <div>
-
-                      <label for="outmail_group_id">??? Group ID</label>
-
-                      <input id="outmail_group_id" placeholder="??" />
-
+                    <div class="mail-field" data-mail-field="domain">
+                      <label id="domain_label" for="domain">域名</label>
+                      <input id="domain" placeholder="多域名用英文逗号分隔，如 a.com, b.com" spellcheck="false" autocomplete="off" />
+                      <div id="domain_note" class="field-note" hidden></div>
                     </div>
-
-                    <div>
-
-                      <label for="outmail_anonymous_provider">?? Provider</label>
-
-                      <select id="outmail_anonymous_provider">
-
-                        <option value="cloudflare">cloudflare</option>
-
-                        <option value="duckmail">duckmail</option>
-
-                        <option value="gptmail">gptmail</option>
-
+                    <div class="mail-field" data-mail-field="expiry_ms" hidden>
+                      <label for="expiry_ms">邮箱有效期</label>
+                      <select id="expiry_ms">
+                        <option value="3600000">1 小时</option>
+                        <option value="86400000">1 天</option>
+                        <option value="259200000">3 天</option>
+                        <option value="0">永久</option>
                       </select>
-
                     </div>
-
-                    <div>
-
-                      <label for="outmail_anonymous_domain">????</label>
-
-                      <input id="outmail_anonymous_domain" placeholder="??????" />
-
+                    <div class="span-2" id="outmail_extra_fields" hidden>
+                      <div class="form-grid mail-settings-grid outmail-extra-grid">
+                        <div>
+                          <label for="outmail_session_cookie">Outmail Session Cookie</label>
+                          <input id="outmail_session_cookie" type="password" placeholder="可选，与 API Key 二选一/并用" autocomplete="off" />
+                        </div>
+                        <div>
+                          <label for="outmail_proxy">Outmail 代理</label>
+                          <input id="outmail_proxy" placeholder="可选，仅 Outmail 拉信" />
+                        </div>
+                        <div>
+                          <label for="outmail_group_id">账号池 Group ID</label>
+                          <input id="outmail_group_id" placeholder="可选" />
+                        </div>
+                        <div>
+                          <label for="outmail_plus_alias_count" title="outmail_plus_alias_count">每号别名次数</label>
+                          <input id="outmail_plus_alias_count" type="number" min="1" max="1000" value="1" />
+                        </div>
+                        <div>
+                          <label for="outmail_alias_suffix_len" title="outmail_alias_suffix_len">别名后缀长度</label>
+                          <input id="outmail_alias_suffix_len" type="number" min="2" max="32" value="6" />
+                        </div>
+                        <div>
+                          <label for="outmail_poll_timeout_sec">验证码超时（秒）</label>
+                          <input id="outmail_poll_timeout_sec" type="number" min="30" max="600" value="180" />
+                        </div>
+                        <div>
+                          <label for="outmail_poll_interval_sec">拉信间隔（秒）</label>
+                          <input id="outmail_poll_interval_sec" type="number" min="1" max="60" value="5" />
+                        </div>
+                        <div>
+                          <label for="outmail_anonymous_provider">匿名 Provider</label>
+                          <select id="outmail_anonymous_provider">
+                            <option value="cloudflare">cloudflare</option>
+                            <option value="duckmail">duckmail</option>
+                            <option value="gptmail">gptmail</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label for="outmail_anonymous_domain">匿名域名</label>
+                          <input id="outmail_anonymous_domain" placeholder="匿名模式域名" />
+                        </div>
+                        <div class="span-2 outmail-checks">
+                          <label class="header-check" for="outmail_plus_alias"><input id="outmail_plus_alias" type="checkbox" checked /> Plus 别名</label>
+                          <label class="header-check" for="outmail_anonymous_enabled"><input id="outmail_anonymous_enabled" type="checkbox" /> 匿名临时邮箱</label>
+                          <label class="header-check" for="outmail_exclude_used"><input id="outmail_exclude_used" type="checkbox" checked /> 排除已用邮箱</label>
+                        </div>
+                      </div>
                     </div>
-
-                    <div class="span-2" style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
-
-                      <label class="header-check" for="outmail_plus_alias"><input id="outmail_plus_alias" type="checkbox" checked /> Plus ??</label>
-
-                      <label class="header-check" for="outmail_anonymous_enabled"><input id="outmail_anonymous_enabled" type="checkbox" /> ??????</label>
-
-                      <label class="header-check" for="outmail_exclude_used"><input id="outmail_exclude_used" type="checkbox" checked /> ??????</label>
-
-                    </div>
-
                   </div>
-
-                </div>
-
-
-
-                <div class="mail-field" data-mail-field="expiry_ms">
-
-                  <label for="expiry_ms">邮箱有效期</label>
-
-                  <select id="expiry_ms">
-
-                    <option value="3600000">1 小时</option>
-
-                    <option value="86400000">1 天</option>
-
-                    <option value="259200000">3 天</option>
-
-                    <option value="0">永久</option>
-
-                  </select>
-
                 </div>
 
                 <div>
@@ -3042,9 +3326,9 @@
 
                   <label>并发策略</label>
 
-                  <div id="reg-power-summary" class="field-note" style="line-height:1.55;padding:10px 12px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:rgba(255,255,255,.03)">
+                  <div id="reg-power-summary" class="field-note callout">
 
-                    安全模式：线程 1 / 过盾 1 / 全局 1。若需高并发，请到 <a href="#settings" data-view="settings" style="color:#8ab4ff">设置 → 强力模式</a> 开启。
+                    安全模式：线程 1 / 过盾 1 / 全局 1。若需高并发，请到 <a href="#settings" data-view="settings" class="link-accent">设置 → 强力模式</a> 开启。
 
                   </div>
 
@@ -3195,20 +3479,15 @@
         </div>
 
         <div id="view-accounts" class="view">
-
         <section class="section accounts-panel" aria-labelledby="accounts-title">
-
-          <div class="table-tools">
-
+          <div class="section-head">
             <div>
-
               <h2 id="accounts-title" class="section-title">账号池</h2>
-
+              <p class="section-desc">筛选、探测、导出与远端同步。</p>
             </div>
-
           </div>
-
-          <div class="accounts-stats" aria-label="账号统计">
+          <div class="section-body accounts-body">
+<div class="accounts-stats" aria-label="账号统计">
 
             <div class="stat-card">
 
@@ -3413,13 +3692,8 @@
               <button id="probe-all" class="btn" type="button">探测列表</button>
 
               <button id="stop-probe" class="btn ghost" type="button">停止探测</button>
-
-              <button id="export-accounts" class="btn" type="button" title="有选中则只导出选中；无选中则导出全部">导出</button>
-
+              <button id="export-account-txt" class="btn info" type="button" title="导出选中账号为 txt：email----password----sso（须先选中）">导出账号</button>
               <button id="export-cpa-accounts" class="btn" type="button" title="有选中则只导出选中；无选中则导出全部">导出 CPA</button>
-
-              <button id="export-sso-selected" class="btn" type="button" title="导出选中账号的 SSO（无选中则导出当前筛选状态的全部 SSO）">导出 SSO</button>
-              <button id="export-account-txt" class="btn info" type="button" title="??????? txt?email----password----sso??????">????</button>
 
             </div>
 
@@ -3435,11 +3709,8 @@
 
               <button id="convert-sso-selected" class="btn" type="button" title="把选中账号的 SSO 转成 Grok2API/CPA Auth（device-flow）。仅 SSO / 待授权 账号适用">转 Auth/CPA</button>
 
-              <button id="upload-selected-grok2api" class="btn info" type="button">Grok2API 导入</button>
-
-              <button id="upload-selected-cpa" class="btn info" type="button">CPA 导入</button>
-
-              <button id="upload-selected-sub2api" class="btn info" type="button">Sub2API Push</button>
+              <button id="upload-selected-sub2api" class="btn info" type="button" title="推送选中账号到 Sub2API">推送 Sub2</button>
+              <button id="upload-selected-cpa" class="btn info" type="button" title="推送选中账号到 CPA">推送 CPA</button>
 
               <button id="relogin-selected" class="btn primary" type="button">重登</button>
 
@@ -3557,37 +3828,29 @@
 
           </div>
 
+          </div>
         </section>
 
         </div>
 
-
-
-                        <div id="view-settings" class="view">
-
-          <section class="section" aria-labelledby="settings-title">
-
-            <div class="section-head">
-
-              <div>
-
-                <h2 id="settings-title" class="section-title">设置</h2>
-
-              </div>
-
+        <div id="view-settings" class="view">
+        <section class="section settings-section" aria-labelledby="settings-title">
+          <div class="section-head">
+            <div>
+              <h2 id="settings-title" class="section-title">设置</h2>
+              <p class="section-desc">远端对接、重登、并发与定时策略。</p>
             </div>
+          </div>
+          <div class="section-body settings-body">
+<div class="card-block">
 
-
-
-            <div class="card-block">
-
-              <div class="section-head" style="padding:0;border:0;margin-bottom:10px">
+              <div class="settings-card-head">
 
                 <div>
 
-                  <h3 class="section-title" style="font-size:14px;margin:0">远端对接（互斥）</h3>
+                  <h3 class="section-title settings-card-title">远端对接（互斥）</h3>
 
-                  <p class="muted" style="margin:4px 0 0;font-size:12px">Grok2API 与 CPA 二选一。自动导入 / 拉取远端状态都只走当前锁定的一边；另一边即使勾选也不会执行。</p>
+                  <p class="muted settings-card-desc">Grok2API 与 CPA 二选一。自动导入 / 拉取远端状态都只走当前锁定的一边；另一边即使勾选也不会执行。</p>
 
                 </div>
 
@@ -3619,19 +3882,17 @@
 
               </div>
 
-              <span id="remote-backend-status" class="badge" style="display:none">未锁定</span>
+              <span id="remote-backend-status" class="badge" is-hidden>未锁定</span>
 
             </div>
 
+            <div class="card-block">
 
-
-            <div class="card-block" style="margin-top:12px">
-
-              <div class="section-head" style="padding:0;border:0;margin-bottom:10px">
+              <div class="settings-card-head">
 
                 <div>
 
-                  <h3 class="section-title" style="font-size:14px;margin:0">Grok2API</h3>
+                  <h3 class="section-title settings-card-title">Grok2API</h3>
 
                 </div>
 
@@ -3723,21 +3984,19 @@
 
               </div>
 
-              <span id="grok2api-status" class="badge" style="display:none">待机</span>
+              <span id="grok2api-status" class="badge" is-hidden>待机</span>
 
-              <pre id="grok2api-log" class="terminal" style="display:none"></pre>
+              <pre id="grok2api-log" class="terminal" is-hidden></pre>
 
             </div>
 
+            <div class="card-block">
 
-
-            <div class="card-block" style="margin-top:12px">
-
-              <div class="section-head" style="padding:0;border:0;margin-bottom:10px">
+              <div class="settings-card-head">
 
                 <div>
 
-                  <h3 class="section-title" style="font-size:14px;margin:0">CPA</h3>
+                  <h3 class="section-title settings-card-title">CPA</h3>
 
                 </div>
 
@@ -3799,23 +4058,21 @@
 
               </div>
 
-              <p class="muted" style="margin:6px 0 0;font-size:12px">状态来自 <code>/v0/management/plugins/grok-inspection/status</code>；可直接粘贴 management.html#/plugin-pages/grok-inspection/0 链接，保存时会自动取域名。</p>
+              <p class="muted settings-card-note">状态来自 <code>/v0/management/plugins/grok-inspection/status</code>；可直接粘贴 management.html#/plugin-pages/grok-inspection/0 链接，保存时会自动取域名。</p>
 
-              <span id="cpa-status" class="badge" style="display:none">待机</span>
+              <span id="cpa-status" class="badge" is-hidden>待机</span>
 
-              <pre id="cpa-log" class="terminal" style="display:none"></pre>
+              <pre id="cpa-log" class="terminal" is-hidden></pre>
 
             </div>
 
+                        <div class="card-block">
 
-
-                        <div class="card-block" style="margin-top:12px">
-
-              <div class="section-head" style="padding:0;border:0;margin-bottom:10px">
+              <div class="settings-card-head">
 
                 <div>
 
-                  <h3 class="section-title" style="font-size:14px;margin:0">Sub2API</h3>
+                  <h3 class="section-title settings-card-title">Sub2API</h3>
 
                 </div>
 
@@ -3825,7 +4082,7 @@
 
                     <input id="sub2_auto_upload" type="checkbox" />
 
-                    Auto push after register probe
+                    注册测活通过后自动推送
 
                   </label>
 
@@ -3833,7 +4090,7 @@
 
                     <input id="sub2_auto_upload_relogin" type="checkbox" />
 
-                    Auto push after relogin probe
+                    重登测活通过后自动推送
 
                   </label>
 
@@ -3841,9 +4098,9 @@
 
                 <div class="actions">
 
-                  <button id="save-sub2api" class="btn primary" type="button">Save</button>
+                  <button id="save-sub2api" class="btn primary" type="button">保存</button>
 
-                  <button id="test-sub2api" class="btn info" type="button">Test</button>
+                  <button id="test-sub2api" class="btn info" type="button">测试</button>
 
                 </div>
 
@@ -3853,7 +4110,7 @@
 
                 <div class="span-2">
 
-                  <label for="sub2_api_base">API Base</label>
+                  <label for="sub2_api_base">地址</label>
 
                   <input id="sub2_api_base" placeholder="https://sub2api.example.com" />
 
@@ -3877,7 +4134,7 @@
 
                 <div>
 
-                  <label for="sub2_default_proxy">Default Proxy</label>
+                  <label for="sub2_default_proxy">默认代理</label>
 
                   <input id="sub2_default_proxy" placeholder="optional" />
 
@@ -3885,21 +4142,19 @@
 
               </div>
 
-              <span id="sub2-status" class="badge" style="display:none">idle</span>
+              <span id="sub2-status" class="badge is-hidden">待机</span>
 
-              <pre id="sub2-log" class="terminal" style="display:none"></pre>
+              <pre id="sub2-log" class="terminal" is-hidden></pre>
 
             </div>
 
+<div class="card-block">
 
-
-<div class="card-block" style="margin-top:12px">
-
-              <div class="section-head" style="padding:0;border:0;margin-bottom:10px">
+              <div class="settings-card-head">
 
                 <div>
 
-                  <h3 class="section-title" style="font-size:14px;margin:0">重登</h3>
+                  <h3 class="section-title settings-card-title">重登</h3>
 
                 </div>
 
@@ -3985,21 +4240,19 @@
 
               </div>
 
-              <span id="relogin-status" class="badge" style="display:none">待机</span>
+              <span id="relogin-status" class="badge" is-hidden>待机</span>
 
             </div>
 
+            <div class="card-block">
 
-
-            <div class="card-block" style="margin-top:12px">
-
-              <div class="section-head" style="padding:0;border:0;margin-bottom:10px">
+              <div class="settings-card-head">
 
                 <div>
 
-                  <h3 class="section-title" style="font-size:14px;margin:0">强力模式（高并发）</h3>
+                  <h3 class="section-title settings-card-title">强力模式（高并发）</h3>
 
-                  <p class="section-desc" style="margin:4px 0 0;font-size:12px;opacity:.75">默认安全 1 线程 / 1 过盾浏览器。开启后可像 grok_reg 一样多开浏览器过盾；仅建议本机高性能机器使用。</p>
+                  <p class="section-desc settings-card-desc">默认安全 1 线程 / 1 过盾浏览器。开启后可像 grok_reg 一样多开浏览器过盾；仅建议本机高性能机器使用。</p>
 
                 </div>
 
@@ -4023,13 +4276,13 @@
 
               </div>
 
-              <div id="power-mode-warn" class="field-note" style="display:none;margin:0 0 10px;padding:10px 12px;border:1px solid rgba(255,120,80,.35);border-radius:10px;background:rgba(255,80,40,.08);color:#ffb4a0;line-height:1.55">
+              <div id="power-mode-warn" class="field-note callout callout-warn is-hidden">
 
                 <strong>注意：</strong>过盾浏览器与注册线程会占用 CPU/内存；机器越弱，可开的并发越少。请按本机资源自行调整。
 
               </div>
 
-              <div class="form-grid" id="power-mode-fields" style="opacity:.45;pointer-events:none">
+              <div class="form-grid is-disabled" id="power-mode-fields">
 
                 <div>
 
@@ -4059,7 +4312,7 @@
 
                   <label>快捷填入</label>
 
-                  <div class="actions" style="justify-content:flex-start;gap:8px;flex-wrap:wrap">
+                  <div class="actions actions-start">
 
                     <button type="button" class="btn ghost power-preset" data-c="1" data-cap="1" data-g="1">1/1/1</button>
 
@@ -4071,27 +4324,25 @@
 
                   </div>
 
-                  <div id="power-mode-hint" class="field-note" style="margin-top:8px">线程 ≈ 过盾浏览器数；全局上限 ≥ 线程。保存后会自动热加载过盾池；从高并发降下来时会自动回收残留浏览器进程。若仍有残留，可用注册页「清理过盾残留」兜底。</div>
+                  <div id="power-mode-hint" class="field-note field-note-mt">线程 ≈ 过盾浏览器数；全局上限 ≥ 线程。保存后会自动热加载过盾池；从高并发降下来时会自动回收残留浏览器进程。若仍有残留，可用注册页「清理过盾残留」兜底。</div>
 
                 </div>
 
               </div>
 
-              <span id="power-mode-status" class="badge" style="display:none">待机</span>
+              <span id="power-mode-status" class="badge" is-hidden>待机</span>
 
             </div>
 
+            <div class="card-block">
 
-
-            <div class="card-block" style="margin-top:12px">
-
-              <div class="section-head" style="padding:0;border:0;margin-bottom:10px">
+              <div class="settings-card-head">
 
                 <div>
 
-                  <h3 class="section-title" style="font-size:14px;margin:0">定时注册策略</h3>
+                  <h3 class="section-title settings-card-title">定时注册策略</h3>
 
-                  <p class="section-desc" style="margin:4px 0 0;font-size:12px;opacity:.75">按间隔自动注册；失败轮换代理/域名；系统压力升高时降并发与测活节奏。</p>
+                  <p class="section-desc settings-card-desc">按间隔自动注册；失败轮换代理/域名；系统压力升高时降并发与测活节奏。</p>
 
                 </div>
 
@@ -4165,9 +4416,9 @@
 
                 </div>
 
-                <div class="span-4" style="margin-top:4px">
+                <div class="span-4 form-subhead-wrap">
 
-                  <strong style="font-size:12px;opacity:.8">失败回退</strong>
+                  <strong class="form-subhead">失败回退</strong>
 
                 </div>
 
@@ -4235,9 +4486,9 @@
 
                 </div>
 
-                <div class="span-4" style="margin-top:4px">
+                <div class="span-4 form-subhead-wrap">
 
-                  <strong style="font-size:12px;opacity:.8">降载 / 测活节奏</strong>
+                  <strong class="form-subhead">降载 / 测活节奏</strong>
 
                 </div>
 
@@ -4289,9 +4540,9 @@
 
                 </div>
 
-                <div class="span-4" style="margin-top:4px">
+                <div class="span-4 form-subhead-wrap">
 
-                  <strong style="font-size:12px;opacity:.8">系统护栏</strong>
+                  <strong class="form-subhead">系统护栏</strong>
 
                 </div>
 
@@ -4365,7 +4616,7 @@
 
               </div>
 
-              <div id="schedule-status-row" class="summary-row" style="margin-top:10px;flex-wrap:wrap;gap:6px">
+              <div id="schedule-status-row" class="summary-row schedule-status-row">
 
                 <span id="schedule-status" class="badge">待机</span>
 
@@ -4377,15 +4628,13 @@
 
               </div>
 
-              <pre id="schedule-log" class="terminal compact" style="display:none;margin-top:8px">就绪</pre>
+              <pre id="schedule-log" class="terminal compact is-hidden schedule-log">就绪</pre>
 
             </div>
 
+            <div class="card-block">
 
-
-            <div class="card-block" style="margin-top:12px">
-
-              <h3 class="section-title" style="font-size:14px;margin:0 0 10px">管理员密码</h3>
+              <h3 class="section-title settings-card-title spaced">管理员密码</h3>
 
               <div class="form-grid">
 
@@ -4413,7 +4662,7 @@
 
                 </div>
 
-                <div style="display:flex;align-items:flex-end">
+                <div class="field-align-end">
 
                   <button id="change-admin-password" class="btn primary" type="button">更新密码</button>
 
@@ -4422,9 +4671,8 @@
               </div>
 
             </div>
-
-          </section>
-
+          </div>
+        </section>
         </div>
 
       </div>
@@ -4433,15 +4681,11 @@
 
   </div>
 
-
-
   <script>
 
     (function () {
 
       "use strict";
-
-
 
       var TERMINAL = new Set(["imported", "error", "failed", "stopped", "cancelled", "done", "partial", "success", "completed"]);
 
@@ -4511,15 +4755,11 @@
 
       };
 
-
-
       function el(id) {
 
         return document.getElementById(id);
 
       }
-
-
 
       function value(id) {
 
@@ -4528,8 +4768,6 @@
         return node ? node.value : "";
 
       }
-
-
 
       function numberValue(id, fallback) {
 
@@ -4541,8 +4779,6 @@
 
       }
 
-
-
       function setText(id, text) {
 
         var node = el(id);
@@ -4551,25 +4787,27 @@
 
       }
 
-
-
-      function setBadge(id, text, kind) {
-
-        var node = el(id);
-
+      function showNode(node) {
         if (!node) return;
-
-        node.textContent = text == null ? "" : String(text);
-
-        node.className = "badge" + (kind ? " " + kind : "");
-
-        // Settings cards hide status badges by default; show them on activity.
-
-        if (node.style && node.style.display === "none") node.style.display = "";
-
+        if (node.hasAttribute && node.hasAttribute("hidden")) node.removeAttribute("hidden");
+        if (node.classList) node.classList.remove("is-hidden");
+        if (node.style) node.style.display = "";
       }
 
+      function hideNode(node) {
+        if (!node) return;
+        if (node.classList) node.classList.add("is-hidden");
+        if (node.style) node.style.display = "none";
+      }
 
+      function setBadge(id, text, kind) {
+        var node = el(id);
+        if (!node) return;
+        node.textContent = text == null ? "" : String(text);
+        node.className = "badge" + (kind ? " " + kind : "");
+        // Settings cards hide status badges by default; show them on activity.
+        showNode(node);
+      }
 
       function showOperation(title, message, options) {
 
@@ -4593,27 +4831,17 @@
 
       }
 
-
-
       function setOperationStopVisible(visible) {
-
         var btn = el("operation-stop");
-
         if (!btn) return;
-
-        btn.style.display = visible ? "" : "none";
-
+        if (visible) showNode(btn); else hideNode(btn);
       }
-
-
 
       function updateOperation(message) {
 
         setText("operation-log", message || "");
 
       }
-
-
 
       function switchView(name) {
 
@@ -4623,9 +4851,9 @@
 
         var meta = {
 
-          register: ["Grok注册机", ""],
+          register: ["Grok Register", ""],
 
-          accounts: ["Grok注册机", ""],
+          accounts: ["Grok Register", ""],
 
           settings: ["设置", "远端连接、强力模式、定时策略与管理员密码"]
 
@@ -4679,25 +4907,14 @@
 
       }
 
-
-
       function log(id, data) {
-
         var node = el(id);
-
         if (!node) return;
-
         var html = renderReadableLog(id, data);
-
         node.innerHTML = html || escapeHtml(toChineseText(data) || "-");
-
         // Settings cards hide log terminals by default; show them when written.
-
-        if (node.style && node.style.display === "none") node.style.display = "";
-
+        showNode(node);
       }
-
-
 
       function toast(message) {
 
@@ -4716,8 +4933,6 @@
         }, 2800);
 
       }
-
-
 
       function detailMessage(error) {
 
@@ -4743,8 +4958,6 @@
 
       }
 
-
-
       function filenameFromDisposition(header, fallback) {
 
         var name = fallback || "download.bin";
@@ -4764,8 +4977,6 @@
         return name;
 
       }
-
-
 
       async function downloadPostZip(path, body, fallbackName) {
 
@@ -4825,8 +5036,6 @@
 
       }
 
-
-
       async function api(path, options) {
 
         if (typeof path === "string" && path.indexOf("/admin/") === 0) {
@@ -4868,8 +5077,6 @@
         return payload;
 
       }
-
-
 
       function setAuthUi(authenticated, needsSetup, opts) {
 
@@ -4925,8 +5132,6 @@
 
       }
 
-
-
       async function checkSession() {
 
         var res = await fetch(__adminUrl("api", "session"), {cache: "no-store"});
@@ -4954,8 +5159,6 @@
         });
 
       }
-
-
 
       async function submitLogin(event) {
 
@@ -5019,8 +5222,6 @@
 
       }
 
-
-
       async function logout() {
 
         await api(__adminUrl("api", "auth", "logout"), {method: "POST"});
@@ -5028,8 +5229,6 @@
         setAuthUi(false, false);
 
       }
-
-
 
       function renderReadableLog(id, data) {
 
@@ -5054,8 +5253,6 @@
         return renderKeyValueLog(data);
 
       }
-
-
 
       function renderPreflightLog(data) {
 
@@ -5088,8 +5285,6 @@
         return wrapLines(lines);
 
       }
-
-
 
       function renderTaskLog(data) {
 
@@ -5177,8 +5372,6 @@
 
       }
 
-
-
       function renderGrok2apiLog(data) {
 
         var lines = [];
@@ -5206,8 +5399,6 @@
         return wrapLines(lines.length ? lines : [line("操作完成", "ok")]);
 
       }
-
-
 
       function renderCpaLog(data) {
 
@@ -5241,8 +5432,6 @@
 
       }
 
-
-
       function renderProbeLog(data) {
 
         var ok = Number(data.ok || 0);
@@ -5268,8 +5457,6 @@
         return wrapLines(lines);
 
       }
-
-
 
       function renderAccountsActionLog(data) {
 
@@ -5320,8 +5507,6 @@
         return wrapLines(lines.length ? lines : [line("操作完成")]);
 
       }
-
-
 
       function renderKeyValueLog(data) {
 
@@ -5377,15 +5562,11 @@
 
       }
 
-
-
       function wrapLines(lines) {
 
         return '<div class="log-lines">' + lines.join("") + '</div>';
 
       }
-
-
 
       function line(text, kind, strong) {
 
@@ -5394,8 +5575,6 @@
         return '<div class="' + cls + '">' + escapeHtml(text || "-") + '</div>';
 
       }
-
-
 
       function readableCheckName(name) {
 
@@ -5420,8 +5599,6 @@
         return map[name] || name || "未知项目";
 
       }
-
-
 
       function toChineseText(text) {
 
@@ -5511,8 +5688,6 @@
 
       }
 
-
-
       function readableProxyStrategy(strategy) {
 
         var map = {round_robin: "轮询", random: "随机", sticky: "固定首个"};
@@ -5520,8 +5695,6 @@
         return map[strategy] || strategy || "-";
 
       }
-
-
 
       function proxyLines(text) {
 
@@ -5555,8 +5728,6 @@
 
       }
 
-
-
       function updateProxyCount() {
 
         var count = proxyLines(value("proxy")).length;
@@ -5564,8 +5735,6 @@
         setText("proxy-count", "已解析 " + count + " 个代理；保存时会完整写入代理池");
 
       }
-
-
 
       function updateReloginProxyCount() {
 
@@ -5575,17 +5744,11 @@
 
       }
 
-
-
       function maskProxyText(text) {
 
         return String(text || "").replace(/:\/\/([^:@/\s]+):([^@/\s]+)@/g, "://$1:***@");
 
       }
-
-
-
-
 
       function syncPowerModeUi() {
 
@@ -5596,28 +5759,20 @@
         var warn = el("power-mode-warn");
 
         if (fields) {
-
-          fields.style.opacity = on ? "1" : ".55";
-
-          fields.style.pointerEvents = "auto";
-
+          fields.classList.toggle("is-disabled", !on);
+          fields.style.opacity = "";
+          fields.style.pointerEvents = "";
           fields.querySelectorAll("input,select,textarea").forEach(function (node) {
-
             // number fields locked until power mode enabled; preset buttons stay active
-
             node.disabled = !on;
-
           });
-
           fields.querySelectorAll("button.power-preset").forEach(function (node) {
-
             node.disabled = false;
-
           });
-
         }
-
-        if (warn) warn.style.display = on ? "block" : "none";
+        if (warn) {
+          if (on) showNode(warn); else hideNode(warn);
+        }
 
         // mirror into hidden register fields
 
@@ -5649,8 +5804,6 @@
 
       }
 
-
-
       function updateRegPowerSummary() {
 
         var node = el("reg-power-summary");
@@ -5676,8 +5829,6 @@
         }
 
       }
-
-
 
       function updatePowerModeHint() {
 
@@ -5706,8 +5857,6 @@
         node.style.color = (cap > 20 || g < c) ? "#ffb4a0" : "";
 
       }
-
-
 
       function applyPowerModeConfig(cfg) {
 
@@ -5750,8 +5899,6 @@
         syncPowerModeUi();
 
       }
-
-
 
       async function savePowerModeConfig() {
 
@@ -5826,8 +5973,6 @@
           : ("已关闭强力模式，恢复 1/1/1" + solverMsg));
 
       }
-
-
 
       function registrationPayload() {
 
@@ -5942,34 +6087,25 @@
           payload.base_url = "https://api.duckmail.sbs";
 
         } else if (mail === "outmail") {
-
           payload.outmail_api_base = payload.base_url;
-
           payload.outmail_api_key = payload.api_key;
-
           payload.outmail_session_cookie = (el("outmail_session_cookie") && el("outmail_session_cookie").value) || "";
-
           payload.outmail_proxy = (el("outmail_proxy") && el("outmail_proxy").value) || "";
-
           payload.outmail_plus_alias = !!(el("outmail_plus_alias") && el("outmail_plus_alias").checked);
-
+          payload.outmail_plus_alias_count = numberValue("outmail_plus_alias_count", 1);
+          payload.outmail_alias_suffix_len = numberValue("outmail_alias_suffix_len", 6);
+          payload.outmail_poll_timeout_sec = numberValue("outmail_poll_timeout_sec", 180);
+          payload.outmail_poll_interval_sec = numberValue("outmail_poll_interval_sec", 5);
           payload.outmail_anonymous_enabled = !!(el("outmail_anonymous_enabled") && el("outmail_anonymous_enabled").checked);
-
           payload.outmail_exclude_used = !!(el("outmail_exclude_used") && el("outmail_exclude_used").checked);
-
           payload.outmail_group_id = (el("outmail_group_id") && el("outmail_group_id").value) || "";
-
           payload.outmail_anonymous_provider = (el("outmail_anonymous_provider") && el("outmail_anonymous_provider").value) || "cloudflare";
-
           payload.outmail_anonymous_domain = (el("outmail_anonymous_domain") && el("outmail_anonymous_domain").value) || payload.domain || "";
-
         }
 
         return payload;
 
       }
-
-
 
       function currentMailProvider() {
 
@@ -5980,8 +6116,6 @@
         return mail;
 
       }
-
-
 
       function mailProviderMeta(provider) {
 
@@ -6141,17 +6275,17 @@
 
             base_url_placeholder: "https://outmail.example.com",
 
-            base_url_note: "Outmail ????",
+            base_url_note: "Outmail 服务地址",
 
             api_key_label: "API Key / Session",
 
-            api_key_note: "API Key ??? Session Cookie",
+            api_key_note: "API Key 或配合 Session Cookie",
 
-            domain_label: "????",
+            domain_label: "匿名域名",
 
-            domain_placeholder: "??????????",
+            domain_placeholder: "匿名模式域名（可选）",
 
-            domain_note: "????????????????"
+            domain_note: "账号池模式无需域名；匿名模式可填"
 
           }
 
@@ -6160,8 +6294,6 @@
         return map[provider] || map.moemail;
 
       }
-
-
 
       // Per-provider form draft so switching mail_provider does not bleed
 
@@ -6185,8 +6317,6 @@
 
       var activeMailProvider = "moemail";
 
-
-
       function captureMailProviderDraft(provider) {
 
         var mail = provider || activeMailProvider || currentMailProvider();
@@ -6204,8 +6334,6 @@
         mailProviderDraft[mail].domain = value("domain").trim();
 
       }
-
-
 
       function restoreMailProviderDraft(provider) {
 
@@ -6239,8 +6367,6 @@
 
       }
 
-
-
       function syncMailProviderFields() {
 
         var mail = currentMailProvider();
@@ -6255,7 +6381,7 @@
 
           var show = !!meta[key];
 
-          node.style.display = show ? "" : "none";
+          if (show) showNode(node); else hideNode(node);
 
         });
 
@@ -6279,7 +6405,7 @@
 
           baseNote.textContent = meta.base_url_note || "";
 
-          baseNote.style.display = meta.base_url_note ? "" : "none";
+          if (meta.base_url_note) showNode(baseNote); else hideNode(baseNote);
 
         }
 
@@ -6293,7 +6419,7 @@
 
           keyNote.textContent = meta.api_key_note || "";
 
-          keyNote.style.display = meta.api_key_note ? "" : "none";
+          if (meta.api_key_note) showNode(keyNote); else hideNode(keyNote);
 
         }
 
@@ -6311,19 +6437,28 @@
 
           domainNote.textContent = meta.domain_note || "";
 
-          domainNote.style.display = meta.domain_note ? "" : "none";
+          if (meta.domain_note) showNode(domainNote); else hideNode(domainNote);
 
         }
 
-        var omExtra = el("outmail_extra_fields");
-
-        if (omExtra) omExtra.style.display = (mail === "outmail") ? "" : "none";
-
-
+                var omExtra = el("outmail_extra_fields");
+        if (omExtra) { if (mail === "outmail") showNode(omExtra); else hideNode(omExtra); }
+        var mailTitle = el("mail_settings_title");
+        if (mailTitle) {
+          var titleMap = {
+            moemail: "MoeMail",
+            yyds: "YYDS",
+            gptmail: "GPTMail",
+            cfmail: "Cloudflare Temp Email",
+            duckmail: "DuckMail",
+            outmail: "Outmail"
+          };
+          mailTitle.textContent = (titleMap[mail] || mail) + " 配置";
+        }
+        var panel = el("mail_settings_panel");
+        if (panel) showNode(panel);
 
       }
-
-
 
       function applyRegistrationConfig(cfg) {
 
@@ -6332,8 +6467,6 @@
         var mail = cfg.mail_provider || "moemail";
 
         if (["moemail", "yyds", "gptmail", "cfmail", "duckmail", "outmail"].indexOf(mail) < 0) mail = "moemail";
-
-
 
         // Seed per-provider drafts from saved backend slots so a switch can
 
@@ -6402,22 +6535,17 @@
         };
 
         if (el("outmail_session_cookie")) el("outmail_session_cookie").value = cfg.outmail_session_cookie || "";
-
         if (el("outmail_proxy")) el("outmail_proxy").value = cfg.outmail_proxy || "";
-
         if (el("outmail_group_id")) el("outmail_group_id").value = cfg.outmail_group_id || "";
-
         if (el("outmail_plus_alias")) el("outmail_plus_alias").checked = cfg.outmail_plus_alias !== false;
-
+        if (el("outmail_plus_alias_count")) el("outmail_plus_alias_count").value = (cfg.outmail_plus_alias_count == null ? 1 : cfg.outmail_plus_alias_count);
+        if (el("outmail_alias_suffix_len")) el("outmail_alias_suffix_len").value = (cfg.outmail_alias_suffix_len == null ? 6 : cfg.outmail_alias_suffix_len);
+        if (el("outmail_poll_timeout_sec")) el("outmail_poll_timeout_sec").value = (cfg.outmail_poll_timeout_sec == null ? 180 : cfg.outmail_poll_timeout_sec);
+        if (el("outmail_poll_interval_sec")) el("outmail_poll_interval_sec").value = (cfg.outmail_poll_interval_sec == null ? 5 : cfg.outmail_poll_interval_sec);
         if (el("outmail_anonymous_enabled")) el("outmail_anonymous_enabled").checked = !!cfg.outmail_anonymous_enabled;
-
         if (el("outmail_exclude_used")) el("outmail_exclude_used").checked = cfg.outmail_exclude_used !== false;
-
         if (el("outmail_anonymous_provider")) el("outmail_anonymous_provider").value = cfg.outmail_anonymous_provider || "cloudflare";
-
         if (el("outmail_anonymous_domain")) el("outmail_anonymous_domain").value = cfg.outmail_anonymous_domain || "";
-
-
 
         // Active provider may still only have the unified api_key/domain slots.
 
@@ -6456,8 +6584,6 @@
           if (!mailProviderDraft.duckmail.domain && cfg.domain) mailProviderDraft.duckmail.domain = cfg.domain;
 
         }
-
-
 
         setValue("mail_provider", mail);
 
@@ -6515,8 +6641,6 @@
 
       }
 
-
-
       function grok2apiPayload() {
 
         var pwd = value("grok2api_password");
@@ -6547,8 +6671,6 @@
 
       }
 
-
-
       function cpaPayload() {
 
         var key = value("cpa_management_key");
@@ -6570,8 +6692,6 @@
         };
 
       }
-
-
 
       function sub2Payload() {
 
@@ -6595,8 +6715,6 @@
 
       }
 
-
-
       async function saveSub2Config() {
 
         setBadge("sub2-status", "saving", "warn");
@@ -6613,11 +6731,9 @@
 
         log("sub2-log", data);
 
-        toast(data.message || "Sub2API saved");
+        toast(data.message || "Sub2API 配置已保存");
 
       }
-
-
 
       async function testSub2() {
 
@@ -6649,8 +6765,6 @@
 
       }
 
-
-
       async function uploadSelectedSub2() {
 
         var emails = selectedEmails();
@@ -6663,9 +6777,9 @@
 
         }
 
-        showOperation("Sub2API", "push " + emails.length + "...");
+        showOperation("Sub2 推送", "准备推送 " + emails.length + "...");
 
-        setBadge("accounts-status", "Sub2API: 0 / " + emails.length, "warn");
+        setBadge("accounts-status", "Sub2 推送：成功 " + emails.length, "warn");
 
         var data = await api(__adminUrl("api", "sub2api", "upload"), {
 
@@ -6675,19 +6789,15 @@
 
         });
 
-        updateOperation("Sub2API done\nfiles:" + (data.files || 0) + "\nuploaded:" + (data.uploaded || 0) + "\nfailed:" + (data.failed || 0));
+        updateOperation("Sub2 推送完成\nfiles:" + (data.files || 0) + "\nuploaded:" + (data.uploaded || 0) + "\nfailed:" + (data.failed || 0));
 
-        setBadge("accounts-status", "Sub2: ok " + (data.uploaded || 0) + ", fail " + (data.failed || 0), data.ok ? "ok" : "warn");
+        setBadge("accounts-status", "Sub2 ?准备推送 " + (data.uploaded || 0) + ", fail " + (data.failed || 0), data.ok ? "ok" : "warn");
 
-        toast("Sub2API: " + (data.uploaded || 0));
+        toast("Sub2 已推送：" + (data.uploaded || 0));
 
         await loadAccounts();
 
       }
-
-
-
-
 
       function applyGrok2apiConfig(cfg) {
 
@@ -6721,8 +6831,6 @@
 
       }
 
-
-
       function applyCpaConfig(cfg) {
 
         cfg = cfg || {};
@@ -6745,8 +6853,6 @@
 
       }
 
-
-
       function setValue(id, val) {
 
         var node = el(id);
@@ -6755,8 +6861,6 @@
 
       }
 
-
-
       async function loadRegistrationConfig() {
 
         var data = await api(__adminUrl("api", "accounts", "register-email", "config"));
@@ -6764,8 +6868,6 @@
         applyRegistrationConfig(data.config);
 
       }
-
-
 
       async function saveRegistrationConfig() {
 
@@ -6789,8 +6891,6 @@
 
       }
 
-
-
       async function preflightRegistration() {
 
         setBadge("reg-status", "自检中", "warn");
@@ -6811,8 +6911,6 @@
 
       }
 
-
-
       async function startSolver() {
 
         setBadge("reg-status", "启动过盾中", "warn");
@@ -6830,8 +6928,6 @@
         log("reg-log", data);
 
       }
-
-
 
       async function cleanupSolverLeftovers() {
 
@@ -6887,8 +6983,6 @@
 
       }
 
-
-
       async function testProxy() {
 
         setBadge("reg-status", "代理测试中", "warn");
@@ -6911,8 +7005,6 @@
 
       }
 
-
-
       function setRegCounts(okCount, failCount) {
 
         var ok = Number(okCount || 0);
@@ -6929,8 +7021,6 @@
 
       }
 
-
-
       function resetRegRate(taskId) {
 
         regRateState.taskId = taskId || null;
@@ -6944,8 +7034,6 @@
         setBadge("reg-elapsed", "计时：--", "");
 
       }
-
-
 
       function formatElapsed(ms) {
 
@@ -6966,8 +7054,6 @@
         return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
 
       }
-
-
 
       function updateRegRate(taskId, okCount, isTerminal) {
 
@@ -6997,8 +7083,6 @@
 
         if (!regRateState.startedAt) regRateState.startedAt = now;
 
-
-
         // Keep a rolling window of success counts for the last ~2 minutes.
 
         regRateState.samples.push({ t: now, ok: ok });
@@ -7012,8 +7096,6 @@
           regRateState.samples.shift();
 
         }
-
-
 
         var ratePerMin = null;
 
@@ -7045,8 +7127,6 @@
 
         }
 
-
-
         var elapsedMs = Math.max(0, now - regRateState.startedAt);
 
         // If no short-window rate yet, fall back to overall average.
@@ -7056,8 +7136,6 @@
           ratePerMin = ok / (elapsedMs / 60000);
 
         }
-
-
 
         var rateText = "--/分";
 
@@ -7076,8 +7154,6 @@
         return { ratePerMin: ratePerMin, elapsedMs: elapsedMs, rateText: rateText };
 
       }
-
-
 
       function extractRegCounts(data) {
 
@@ -7130,8 +7206,6 @@
         };
 
       }
-
-
 
       async function startRegistration() {
 
@@ -7187,8 +7261,6 @@
 
       }
 
-
-
       async function stopRegistration() {
 
         var data = await api(__adminUrl("api", "accounts", "register-email", "stop"), {
@@ -7208,8 +7280,6 @@
         refreshAccounts();
 
       }
-
-
 
       function pickLiveRegistrationTask(sessions) {
 
@@ -7255,8 +7325,6 @@
 
       }
 
-
-
       async function refreshRegistration() {
 
         if (!regTask) {
@@ -7292,8 +7360,6 @@
         await pollRegistrationOnce();
 
       }
-
-
 
       async function pollRegistrationOnce() {
 
@@ -7333,8 +7399,6 @@
 
       }
 
-
-
       function pollRegistration() {
 
         pollRegistrationOnce().catch(function (err) {
@@ -7363,8 +7427,6 @@
 
       }
 
-
-
       function clearPoll() {
 
         if (pollTimer) clearInterval(pollTimer);
@@ -7372,8 +7434,6 @@
         pollTimer = null;
 
       }
-
-
 
       function normalizeStatus(status, data) {
 
@@ -7428,8 +7488,6 @@
         return {label: translateStatus(s), kind: terminal ? "bad" : "warn", terminal: terminal};
 
       }
-
-
 
       function translateStatus(status) {
 
@@ -7497,8 +7555,6 @@
 
       }
 
-
-
       function summarizeTask(data) {
 
         if (!data || typeof data !== "object") return data;
@@ -7549,8 +7605,6 @@
 
       }
 
-
-
       async function loadGrok2apiConfig() {
 
         var data = await api(__adminUrl("api", "grok2api", "config"));
@@ -7559,8 +7613,6 @@
 
       }
 
-
-
       async function loadCpaConfig() {
 
         var data = await api(__adminUrl("api", "cpa", "config"));
@@ -7568,8 +7620,6 @@
         applyCpaConfig(data.config);
 
       }
-
-
 
       function applySub2Config(cfg) {
 
@@ -7593,8 +7643,6 @@
 
       }
 
-
-
       async function loadSub2Config() {
 
         var data = await api(__adminUrl("api", "sub2api", "config"));
@@ -7602,8 +7650,6 @@
         applySub2Config(data.config);
 
       }
-
-
 
       async function loadRemoteBackend() {
 
@@ -7632,8 +7678,6 @@
         }
 
       }
-
-
 
       async function saveRemoteBackend() {
 
@@ -7670,8 +7714,6 @@
         try { await loadCpaConfig(); } catch (e) {}
 
       }
-
-
 
       function enforceExclusiveAutoUpload(source) {
 
@@ -7751,8 +7793,6 @@
 
       }
 
-
-
       function applyReloginConfig(cfg) {
 
         if (!cfg) return;
@@ -7776,8 +7816,6 @@
         updateReloginProxyCount();
 
       }
-
-
 
       function reloginPayload() {
 
@@ -7807,8 +7845,6 @@
 
       }
 
-
-
       async function loadReloginConfig() {
 
         var data = await api(__adminUrl("api", "accounts", "relogin", "config"));
@@ -7816,8 +7852,6 @@
         applyReloginConfig(data.config);
 
       }
-
-
 
       async function saveReloginConfig() {
 
@@ -7839,8 +7873,6 @@
 
       }
 
-
-
       var scheduleStatusTimer = null;
 
       // While the operator is editing schedule fields, status polling must NOT
@@ -7850,8 +7882,6 @@
       var scheduleFormDirty = false;
 
       var scheduleFormBound = false;
-
-
 
       function scheduleChecked(id, fallback) {
 
@@ -7863,8 +7893,6 @@
 
       }
 
-
-
       function setChecked(id, on) {
 
         var node = el(id);
@@ -7873,23 +7901,17 @@
 
       }
 
-
-
       function markScheduleFormDirty() {
 
         scheduleFormDirty = true;
 
       }
 
-
-
       function clearScheduleFormDirty() {
 
         scheduleFormDirty = false;
 
       }
-
-
 
       function isScheduleFieldActive() {
 
@@ -7900,8 +7922,6 @@
         return String(active.id).indexOf("schedule_") === 0;
 
       }
-
-
 
       function bindScheduleFormDirtyGuards() {
 
@@ -7930,8 +7950,6 @@
         });
 
       }
-
-
 
       function schedulePayload() {
 
@@ -7992,8 +8010,6 @@
         };
 
       }
-
-
 
       function applySchedulePolicy(pol) {
 
@@ -8057,8 +8073,6 @@
 
       }
 
-
-
       function formatTs(ts) {
 
         var n = Number(ts || 0);
@@ -8076,8 +8090,6 @@
         }
 
       }
-
-
 
       function applyScheduleStatus(st, opts) {
 
@@ -8155,8 +8167,6 @@
 
       }
 
-
-
       async function loadScheduleStatus(opts) {
 
         try {
@@ -8176,8 +8186,6 @@
         }
 
       }
-
-
 
       async function saveSchedulePolicy() {
 
@@ -8204,8 +8212,6 @@
         try { await loadScheduleStatus({applyPolicy: false}); } catch (e) {}
 
       }
-
-
 
       async function runScheduleNow() {
 
@@ -8251,8 +8257,6 @@
 
       }
 
-
-
       async function resetScheduleThrottle() {
 
         setBadge("schedule-status", "恢复中", "warn");
@@ -8275,8 +8279,6 @@
 
       }
 
-
-
       function startScheduleStatusPoll() {
 
         stopScheduleStatusPoll();
@@ -8297,8 +8299,6 @@
 
       }
 
-
-
       function stopScheduleStatusPoll() {
 
         if (scheduleStatusTimer) clearInterval(scheduleStatusTimer);
@@ -8306,8 +8306,6 @@
         scheduleStatusTimer = null;
 
       }
-
-
 
       async function saveGrok2apiConfig() {
 
@@ -8338,8 +8336,6 @@
         try { await loadRemoteBackend(); } catch (e) {}
 
       }
-
-
 
       async function testGrok2api() {
 
@@ -8374,8 +8370,6 @@
         }
 
       }
-
-
 
       async function uploadGrok2api() {
 
@@ -8425,8 +8419,6 @@
 
       }
 
-
-
       async function saveCpaConfig() {
 
         enforceExclusiveAutoUpload("cpa");
@@ -8456,8 +8448,6 @@
         try { await loadRemoteBackend(); } catch (e) {}
 
       }
-
-
 
       async function testCpa() {
 
@@ -8503,8 +8493,6 @@
 
       }
 
-
-
       async function uploadCpa() {
 
         setBadge("cpa-status", "导入中", "warn");
@@ -8524,32 +8512,6 @@
         log("cpa-log", data);
 
       }
-
-
-
-      
-
-
-
-      
-
-
-
-      
-
-
-
-      
-
-
-
-      
-
-
-
-      
-
-
 
       async function changeAdminPassword() {
 
@@ -8589,8 +8551,6 @@
 
       }
 
-
-
       function accountEmailKey(accOrEmail) {
 
         if (accOrEmail && typeof accOrEmail === "object") {
@@ -8602,8 +8562,6 @@
         return String(accOrEmail || "").trim().toLowerCase();
 
       }
-
-
 
       function captureFreezeOrder(reason, ttlMs) {
 
@@ -8619,8 +8577,6 @@
 
       }
 
-
-
       function clearFreezeOrder() {
 
         accountState.freezeOrder = null;
@@ -8631,8 +8587,6 @@
 
       }
 
-
-
       function shouldFreezeOrder() {
 
         if (accountState.selected && accountState.selected.size > 0) return true;
@@ -8642,8 +8596,6 @@
         return false;
 
       }
-
-
 
       function applyFrozenOrder(accounts) {
 
@@ -8696,8 +8648,6 @@
         return ordered;
 
       }
-
-
 
       async function refreshAccounts() {
 
@@ -8765,8 +8715,6 @@
 
       }
 
-
-
       function renderAccounts(accounts) {
 
         var body = el("accounts-body");
@@ -8815,8 +8763,6 @@
 
       }
 
-
-
       function applyAccountFilters() {
 
         // Filters apply to the whole SQLite database via API, not just current page.
@@ -8828,8 +8774,6 @@
         return refreshAccounts();
 
       }
-
-
 
       function sortAccounts(accounts) {
 
@@ -8851,8 +8795,6 @@
 
       }
 
-
-
       function accountSortValue(account, field) {
 
         if (field === "status") return accountStatus(account);
@@ -8872,8 +8814,6 @@
         return String(account[field] || "").toLowerCase();
 
       }
-
-
 
       function syncSortHeaders() {
 
@@ -8897,8 +8837,6 @@
 
       }
 
-
-
       function applyAccountSort(field, order) {
 
         accountState.sortField = field;
@@ -8915,8 +8853,6 @@
 
       }
 
-
-
       function changeAccountSort(field, initialOrder) {
 
         var order = accountState.sortField === field
@@ -8928,8 +8864,6 @@
         return applyAccountSort(field, order);
 
       }
-
-
 
       function syncSelectionUi() {
 
@@ -8995,15 +8929,11 @@
 
       }
 
-
-
       function selectedEmails() {
 
         return Array.from(accountState.selected);
 
       }
-
-
 
       function accountsFilterQuery() {
 
@@ -9028,8 +8958,6 @@
           "&remote=" + remote;
 
       }
-
-
 
       async function selectAllFiltered() {
 
@@ -9155,8 +9083,6 @@
 
       }
 
-
-
       function clearSelected() {
 
         accountState.selected.clear();
@@ -9172,8 +9098,6 @@
         toast("已清空选择");
 
       }
-
-
 
       function accountSearchText(acc) {
 
@@ -9199,8 +9123,6 @@
 
       }
 
-
-
       function accountStatus(acc) {
 
         // Keep raw DB status for filtering; only normalize display aliases.
@@ -9215,8 +9137,6 @@
 
       }
 
-
-
       function probeState(probe) {
 
         // Same rules as probeCell() badges / DB probe filter.
@@ -9230,8 +9150,6 @@
         return "untested";
 
       }
-
-
 
       function renderAccountSummary() {
 
@@ -9305,8 +9223,6 @@
 
       }
 
-
-
       function cell(html, className) {
 
         if (className) return '<td class="' + escapeHtml(className) + '">' + html + '</td>';
@@ -9315,15 +9231,11 @@
 
       }
 
-
-
       function twoLine(a, b) {
 
         return '<span class="truncate">' + escapeHtml(a) + '</span><span class="truncate mono muted">' + escapeHtml(b) + '</span>';
 
       }
-
-
 
       function accountIdentityCell(acc) {
 
@@ -9335,23 +9247,17 @@
 
       }
 
-
-
       function small(text) {
 
         return text ? '<div class="mono muted">' + escapeHtml(text) + '</div>' : "";
 
       }
 
-
-
       function pathText(text) {
 
         return '<span class="truncate mono path-cell" title="' + escapeHtml(text) + '">' + escapeHtml(text) + '</span>';
 
       }
-
-
 
       function authDataCell(acc) {
 
@@ -9366,8 +9272,6 @@
         return '<span class="auth-data-cell">' + (sso + grok + cpa || '<span class="muted">无</span>') + '</span>';
 
       }
-
-
 
       function dateCell(value, compact) {
 
@@ -9384,8 +9288,6 @@
         return '<span class="date-cell"><span>' + escapeHtml(parts.date) + '</span><span class="mono muted">' + escapeHtml(parts.time) + '</span></span>';
 
       }
-
-
 
       function batchCell(batchId, sessionId) {
 
@@ -9406,8 +9308,6 @@
         return html;
 
       }
-
-
 
       function probeCell(probe) {
 
@@ -9438,8 +9338,6 @@
         return html;
 
       }
-
-
 
       function remoteCell(acc) {
 
@@ -9513,8 +9411,6 @@
 
       }
 
-
-
       function remoteAction(acc) {
 
         var remote = (acc && (acc._remote || acc.remote)) || null;
@@ -9581,8 +9477,6 @@
 
       }
 
-
-
       function extractRemoteItems(data) {
 
         if (!data || typeof data !== "object") return [];
@@ -9594,8 +9488,6 @@
         return Array.isArray(list) ? list : [];
 
       }
-
-
 
       function attachRemote(accounts) {
 
@@ -9619,8 +9511,6 @@
 
       }
 
-
-
       function rebuildRemoteMap(items) {
 
         var map = new Map();
@@ -9636,8 +9526,6 @@
         accountState.remoteMap = map;
 
       }
-
-
 
       function accountKey(item) {
 
@@ -9661,8 +9549,6 @@
 
       }
 
-
-
       function shortId(value) {
 
         var s = String(value || "").trim();
@@ -9672,8 +9558,6 @@
         return s.length > 18 ? s.slice(0, 10) + "..." + s.slice(-5) : s;
 
       }
-
-
 
       function statusBadge(status) {
 
@@ -9717,8 +9601,6 @@
 
       }
 
-
-
       function formatTime(value) {
 
         if (!value) return "-";
@@ -9730,8 +9612,6 @@
         return new Date(n * 1000).toLocaleString();
 
       }
-
-
 
       function formatDateParts(value) {
 
@@ -9761,8 +9641,6 @@
 
       }
 
-
-
       function escapeHtml(value) {
 
         return String(value == null ? "" : value)
@@ -9777,11 +9655,7 @@
 
       }
 
-
-
       var probePollTimer = null;
-
-
 
       function renderProbeProgress(task) {
 
@@ -9809,8 +9683,6 @@
 
       }
 
-
-
       async function pollProbeStatus() {
 
         var task = await api(__adminUrl("api", "accounts", "probe", "status"));
@@ -9835,8 +9707,6 @@
 
       }
 
-
-
       function watchProbeStatus() {
 
         if (probePollTimer) clearInterval(probePollTimer);
@@ -9858,8 +9728,6 @@
         return pollProbeStatus();
 
       }
-
-
 
       async function startProbe(payload, description) {
 
@@ -9887,8 +9755,6 @@
 
       }
 
-
-
       async function probeAll() {
 
         return startProbe({
@@ -9904,8 +9770,6 @@
         }, "列表探测");
 
       }
-
-
 
       async function probeSelected() {
 
@@ -9927,8 +9791,6 @@
 
       }
 
-
-
       async function stopProbe() {
 
         var data = await api(__adminUrl("api", "accounts", "probe", "stop"), {method: "POST"});
@@ -9940,8 +9802,6 @@
         setBadge("accounts-status", "探测停止中", "warn");
 
       }
-
-
 
       async function uploadSelectedGrok2api() {
 
@@ -9957,7 +9817,7 @@
 
           "Grok2API 导入日志",
 
-          "准备导入 " + emails.length + " 个选中账号...\n模式：" + (mode === "web_sso" ? "网页 SSO" : "auth 文件") + "\n正在请求远端，请稍候。"
+          "准备推送 " + emails.length + " 个选中账号...\n模式：" + (mode === "web_sso" ? "网页 SSO" : "auth 文件") + "\n正在请求远端，请稍候。"
 
         );
 
@@ -10031,17 +9891,15 @@
 
       }
 
-
-
       async function uploadSelectedCpa() {
 
         var emails = selectedEmails();
 
         if (!emails.length) return toast("先选择账号");
 
-        showOperation("CPA 导入日志", "准备导入 " + emails.length + " 个选中账号...");
+        showOperation("CPA 推送日志", "准备推送 " + emails.length + " 个选中账号...");
 
-        setBadge("accounts-status", "CPA 导入中：0 / " + emails.length, "warn");
+        setBadge("accounts-status", "CPA 推送中：0 / " + emails.length, "warn");
 
         var data = await api(__adminUrl("api", "cpa", "upload"), {
 
@@ -10053,11 +9911,11 @@
 
         log("accounts-log", data);
 
-        updateOperation("CPA 导入完成\n处理：" + (data.files || 0) + "\n成功：" + (data.uploaded || 0) + "\n失败：" + (data.failed || 0) + "\n跳过：" + (data.skipped || 0));
+        updateOperation("CPA 推送完成\n处理：" + (data.files || 0) + "\n成功：" + (data.uploaded || 0) + "\n失败：" + (data.failed || 0) + "\n跳过：" + (data.skipped || 0));
 
-        setBadge("accounts-status", "CPA：成功 " + (data.uploaded || 0) + "，失败 " + (data.failed || 0), data.ok ? "ok" : "warn");
+        setBadge("accounts-status", "CPA 推送：成功 " + (data.uploaded || 0) + "，失败 " + (data.failed || 0), data.ok ? "ok" : "warn");
 
-        toast("CPA 已处理：" + (data.files || 0));
+        toast("CPA 已推送：" + (data.files || 0));
 
         accountState.remoteMap = new Map();
 
@@ -10067,11 +9925,7 @@
 
       }
 
-
-
       var reloginPollTimer = null;
-
-
 
       async function stopRelogin() {
 
@@ -10086,8 +9940,6 @@
         toast(data.message || "已请求停止重登");
 
       }
-
-
 
       async function reloginSelected() {
 
@@ -10255,8 +10107,6 @@
 
       }
 
-
-
       async function deleteSelected() {
 
         var emails = selectedEmails();
@@ -10292,8 +10142,6 @@
         await refreshAccounts();
 
       }
-
-
 
       async function pullRemoteStatus(mode) {
 
@@ -10399,15 +10247,11 @@
 
       }
 
-
-
       async function pullRemoteAll() {
 
         return pullRemoteStatus("full");
 
       }
-
-
 
       async function pullRemoteFailed() {
 
@@ -10473,8 +10317,6 @@
 
       }
 
-
-
       async function exportCpaAccounts() {
 
         // Selected-first: if any rows checked, export only those. Empty selection = full pool.
@@ -10519,21 +10361,18 @@
 
       }
 
-
-
-      
       async function exportAccountTxt() {
         var emails = selectedEmails();
         if (!emails.length) {
-          toast("??????????");
+          toast("请先选择要导出的账号");
           return;
         }
-        setBadge("accounts-status", "???? " + emails.length + "?", "warn");
+        setBadge("accounts-status", "导出账号 " + emails.length + "\u2026", "warn");
         try {
           var res = await fetch(__adminUrl("api", "accounts", "export"), {
             method: "POST",
             credentials: "same-origin",
-            headers: Object "Content-Type": "application/json", "Accept": "text/plain,*/*" },
+            headers: { "Content-Type": "application/json", "Accept": "text/plain,*/*" },
             body: JSON.stringify({ emails: emails, require_selected: true })
           });
           if (!res.ok) {
@@ -10560,11 +10399,11 @@
           a.remove();
           setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
           var n = res.headers.get("x-export-count") || emails.length;
-          setBadge("accounts-status", "????? " + n, "ok");
-          toast("??? " + n + " ??email----password----sso?");
+          setBadge("accounts-status", "已导出账号 " + n, "ok");
+          toast("已导出 " + n + " 条（email----password----sso）");
         } catch (err) {
-          setBadge("accounts-status", "??????", "bad");
-          toast((err && err.message) || "??????");
+          setBadge("accounts-status", "导出账号失败", "bad");
+          toast((err && err.message) || "导出账号失败");
           throw err;
         }
       }
@@ -10659,8 +10498,6 @@ async function exportSsoSelected() {
 
       }
 
-
-
       async function convertSsoSelected() {
 
         var emails = selectedEmails();
@@ -10727,8 +10564,6 @@ async function exportSsoSelected() {
 
       }
 
-
-
       function changeAccountsPage(page) {
 
         accountState.page = Math.max(1, Math.min(accountState.totalPages || 1, page));
@@ -10738,8 +10573,6 @@ async function exportSsoSelected() {
         return refreshAccounts();
 
       }
-
-
 
       function bind(id, event, fn) {
 
@@ -10793,8 +10626,6 @@ async function exportSsoSelected() {
 
       }
 
-
-
       function bindNavigation() {
 
         document.querySelectorAll("[data-view]").forEach(function (node) {
@@ -10816,8 +10647,6 @@ async function exportSsoSelected() {
         });
 
       }
-
-
 
       function bindAccountFilters() {
 
@@ -10933,8 +10762,6 @@ async function exportSsoSelected() {
 
       }
 
-
-
       function bindAccountSelection() {
 
         var body = el("accounts-body");
@@ -11005,8 +10832,6 @@ async function exportSsoSelected() {
 
       }
 
-
-
       function bindAccountsPager() {
 
         bind("page-first", "click", function () { return changeAccountsPage(1); });
@@ -11042,8 +10867,6 @@ async function exportSsoSelected() {
         }
 
       }
-
-
 
       function bindLogActions() {
 
@@ -11082,8 +10905,6 @@ async function exportSsoSelected() {
         });
 
       }
-
-
 
       function bindOperationDialog() {
 
@@ -11129,8 +10950,6 @@ async function exportSsoSelected() {
 
       }
 
-
-
       function isTaskRunningStatus(status, runningFlag) {
 
         if (runningFlag) return true;
@@ -11140,8 +10959,6 @@ async function exportSsoSelected() {
         return ["running", "starting", "stopping", "registering", "probing", "waiting_solver", "solving_turnstile", "queued"].indexOf(s) >= 0;
 
       }
-
-
 
       async function restoreRegistrationProgress(reg) {
 
@@ -11200,8 +11017,6 @@ async function exportSsoSelected() {
         else await pollRegistrationOnce();
 
       }
-
-
 
       async function restoreReloginProgress(task) {
 
@@ -11355,8 +11170,6 @@ async function exportSsoSelected() {
 
       }
 
-
-
       async function restoreProbeProgress() {
 
         var task = await api(__adminUrl("api", "accounts", "probe", "status"));
@@ -11372,8 +11185,6 @@ async function exportSsoSelected() {
         return true;
 
       }
-
-
 
       async function restoreActiveTasks() {
 
@@ -11400,8 +11211,6 @@ async function exportSsoSelected() {
         var probe = data && data.probe ? data.probe : null;
 
         var relogin = data && data.relogin ? data.relogin : null;
-
-
 
         // Registration has its own right-side log panel — always try first.
 
@@ -11451,8 +11260,6 @@ async function exportSsoSelected() {
 
         }
 
-
-
         // Probe / relogin share the floating operation dialog.
 
         var restoredProbe = false;
@@ -11481,13 +11288,7 @@ async function exportSsoSelected() {
 
       }
 
-
-
-
-
       var THEME_KEY = "grok_register_theme";
-
-
 
       function currentTheme() {
 
@@ -11496,8 +11297,6 @@ async function exportSsoSelected() {
         return t === "light" ? "light" : "dark";
 
       }
-
-
 
       function applyTheme(theme) {
 
@@ -11517,15 +11316,11 @@ async function exportSsoSelected() {
 
       }
 
-
-
       function toggleTheme() {
 
         applyTheme(currentTheme() === "light" ? "dark" : "light");
 
       }
-
-
 
       function boot() {
 
@@ -11657,8 +11452,6 @@ async function exportSsoSelected() {
 
         });
 
-
-
         bind("run-schedule-now", "click", runScheduleNow);
 
         bind("reset-schedule-throttle", "click", resetScheduleThrottle);
@@ -11678,10 +11471,7 @@ async function exportSsoSelected() {
         bind("clear-selected", "click", clearSelected);
 
         bind("probe-selected", "click", probeSelected);
-
-        bind("upload-selected-grok2api", "click", uploadSelectedGrok2api);
-
-        bind("upload-selected-cpa", "click", uploadSelectedCpa);
+bind("upload-selected-cpa", "click", uploadSelectedCpa);
 
         bind("upload-selected-sub2api", "click", uploadSelectedSub2);
 
@@ -11692,13 +11482,8 @@ async function exportSsoSelected() {
         bind("relogin-selected", "click", reloginSelected);
 
         bind("delete-selected", "click", deleteSelected);
-
-        bind("export-accounts", "click", exportAccounts);
-
+bind("export-account-txt", "click", exportAccountTxt);
         bind("export-cpa-accounts", "click", exportCpaAccounts);
-
-        bind("export-sso-selected", "click", exportSsoSelected);
-        bind("export-account-txt", "click", exportAccountTxt);
 
         bind("convert-sso-selected", "click", convertSsoSelected);
 
@@ -11754,8 +11539,6 @@ async function exportSsoSelected() {
 
         switchView((location.hash || "#register").slice(1));
 
-
-
         Promise.all([
 
           loadRegistrationConfig(),
@@ -11788,8 +11571,6 @@ async function exportSsoSelected() {
 
       }
 
-
-
       function initAuth() {
 
         var form = el("login-form");
@@ -11818,8 +11599,6 @@ async function exportSsoSelected() {
 
       }
 
-
-
       if (document.readyState === "loading") {
 
         document.addEventListener("DOMContentLoaded", initAuth);
@@ -11832,7 +11611,6 @@ async function exportSsoSelected() {
 
     })();
 
-  
       function wrapTablesForMobile() {
         try {
           document.querySelectorAll(".content table, .card table, .panel table").forEach(function (table) {

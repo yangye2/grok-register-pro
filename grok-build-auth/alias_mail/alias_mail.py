@@ -190,8 +190,8 @@ def random_local(prefix: str = "name") -> str:
     first = secrets.choice(ENGLISH_FIRST_NAMES)
     last = secrets.choice(ENGLISH_LAST_NAMES)
     num = secrets.randbelow(900) + 100
-    # ???????????????????/???/????
-    # ????????????? local-part?
+    # Alias generation notes.
+    # Prefer pure alphanumeric local-part when possible.
     local = f"{first}{last}"
     clean_prefix = (prefix or "").strip("-_.").lower()
     if clean_prefix and clean_prefix not in {"name", "person", "mail", "email"}:
@@ -264,7 +264,7 @@ def healthy_domains(include_unhealthy: bool = False) -> list[str]:
 
 
 def next_rotating_domain(commit: bool = True) -> str:
-    """????????????????? email_unreachable/silent_drop/disabled ????"""
+    """Classify delivery issues: email_unreachable / silent_drop / disabled."""
     domains = healthy_domains()
     if not domains:
         raise SystemExit(f"no usable alias domains; inspect {HEALTH_FILE}")
