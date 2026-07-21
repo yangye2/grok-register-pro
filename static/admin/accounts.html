@@ -1776,23 +1776,15 @@
     }
 
     .accounts-panel .table-wrap {
-
-      flex: 1 1 260px;
-
-      min-height: 220px;
-
-      max-height: 520px;
-
+      flex: 1 1 auto;
+      min-height: 360px;
+      max-height: none;
+      height: auto;
       margin-top: 10px;
-
       border: 1px solid var(--line);
-
       border-radius: 6px;
-
       background: var(--panel);
-
       overflow: auto;
-
     }
 
     .account-table {
@@ -2631,7 +2623,17 @@
     .content {
       width: 100%;
       margin: 0 auto;
-      padding: 20px 22px 28px;
+      padding: 16px 18px 12px;
+    }
+    /* Accounts page: content becomes a full-height column */
+    .main:has(#view-accounts.active) .content {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100dvh - 0px);
+      padding-bottom: 10px;
+    }
+    .main {
+      min-height: 100dvh;
     }
 
     .section {
@@ -2741,7 +2743,12 @@
     }
     .mail-provider-row select { max-width: 420px; }
 
-    /* Accounts: same card shell as register/settings */
+    /* Accounts: fill remaining viewport so table uses bottom space */
+    #view-accounts.view.active {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100dvh - 40px);
+    }
     .accounts-panel {
       border: 1px solid var(--line) !important;
       border-radius: var(--radius) !important;
@@ -2749,9 +2756,10 @@
       box-shadow: none !important;
       margin: 0 !important;
       padding: 0 !important;
-      min-height: 0 !important;
-      display: flex;
-      flex-direction: column;
+      min-height: calc(100dvh - 48px) !important;
+      height: calc(100dvh - 48px) !important;
+      display: flex !important;
+      flex-direction: column !important;
       font-size: 12px;
       gap: 0;
     }
@@ -2759,11 +2767,12 @@
       flex: 0 0 auto;
     }
     .accounts-body {
-      padding: 16px !important;
-      display: flex;
-      flex-direction: column;
+      padding: 14px 16px 12px !important;
+      display: flex !important;
+      flex-direction: column !important;
       gap: 0;
-      min-height: 0;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
     }
     .accounts-stats {
       display: grid;
@@ -2851,14 +2860,21 @@
       font-size: 11px;
     }
     .accounts-panel .table-wrap {
-      flex: 1 1 260px;
-      min-height: 220px;
-      max-height: min(520px, calc(100vh - 360px));
-      margin-top: 12px;
+      flex: 1 1 auto !important;
+      min-height: 420px !important;
+      max-height: none !important;
+      height: 100% !important;
+      margin-top: 10px;
+      margin-bottom: 0;
       border: 1px solid var(--line);
       border-radius: 6px;
       background: var(--panel);
       overflow: auto;
+    }
+    .accounts-panel .pager {
+      flex: 0 0 auto;
+      margin-top: 10px;
+      margin-bottom: 0;
     }
     .pager {
       display: flex;
@@ -2995,6 +3011,14 @@
       .accounts-filters .search-field { grid-column: 1 / -1; min-width: 0 !important; }
       .settings-card-head { align-items: flex-start; }
       .header-checks { justify-content: flex-start; margin: 0; }
+      .accounts-panel {
+        min-height: calc(100dvh - 24px) !important;
+        height: auto !important;
+      }
+      .accounts-panel .table-wrap {
+        min-height: 48vh !important;
+        max-height: none !important;
+      }
     }
 
     @media (max-width: 420px) {
@@ -6115,7 +6139,13 @@
           payload.outmail_exclude_used = !!(el("outmail_exclude_used") && el("outmail_exclude_used").checked);
           payload.outmail_group_id = (el("outmail_group_id") && el("outmail_group_id").value) || "";
           payload.outmail_anonymous_provider = (el("outmail_anonymous_provider") && el("outmail_anonymous_provider").value) || "cloudflare";
-          payload.outmail_anonymous_domain = (el("outmail_anonymous_domain") && el("outmail_anonymous_domain").value) || payload.domain || "";
+          // Prefer dedicated anonymous-domain input; fall back to unified domain field.
+          // Keep both fields mirrored so save/reload never drops the value.
+          var anonDomain = ((el("outmail_anonymous_domain") && el("outmail_anonymous_domain").value) || "").trim();
+          var unifiedDomain = (payload.domain || "").trim();
+          var domainFinal = anonDomain || unifiedDomain;
+          payload.domain = domainFinal;
+          payload.outmail_anonymous_domain = domainFinal;
         }
 
         return payload;
@@ -6346,7 +6376,15 @@
 
         mailProviderDraft[mail].api_key = value("api_key");
 
-        mailProviderDraft[mail].domain = value("domain").trim();
+        var domVal = value("domain").trim();
+        if (mail === "outmail") {
+          var anon = ((el("outmail_anonymous_domain") && el("outmail_anonymous_domain").value) || "").trim();
+          domVal = anon || domVal;
+          if (el("outmail_anonymous_domain") && !anon && domVal) {
+            el("outmail_anonymous_domain").value = domVal;
+          }
+        }
+        mailProviderDraft[mail].domain = domVal;
 
       }
 
@@ -6560,7 +6598,9 @@
         if (el("outmail_anonymous_enabled")) el("outmail_anonymous_enabled").checked = !!cfg.outmail_anonymous_enabled;
         if (el("outmail_exclude_used")) el("outmail_exclude_used").checked = cfg.outmail_exclude_used !== false;
         if (el("outmail_anonymous_provider")) el("outmail_anonymous_provider").value = cfg.outmail_anonymous_provider || "cloudflare";
-        if (el("outmail_anonymous_domain")) el("outmail_anonymous_domain").value = cfg.outmail_anonymous_domain || "";
+        var omDom = cfg.outmail_anonymous_domain || cfg.domain || "";
+        if (el("outmail_anonymous_domain")) el("outmail_anonymous_domain").value = omDom;
+        if (mailProviderDraft.outmail) mailProviderDraft.outmail.domain = omDom;
 
         // Active provider may still only have the unified api_key/domain slots.
 
@@ -6603,6 +6643,12 @@
         setValue("mail_provider", mail);
 
         restoreMailProviderDraft(mail);
+        // Outmail: keep dedicated anonymous domain input in sync with unified domain.
+        if (mail === "outmail") {
+          var omDom2 = (cfg.outmail_anonymous_domain || cfg.domain || mailProviderDraft.outmail.domain || "");
+          setValue("domain", omDom2);
+          if (el("outmail_anonymous_domain")) el("outmail_anonymous_domain").value = omDom2;
+        }
 
         setValue("count", cfg.count || 1);
 

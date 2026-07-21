@@ -1053,6 +1053,8 @@ def _mail_provider_key_slot(provider: str) -> str:
 
         "duckmail": "duckmail_api_key",
 
+        "outmail": "outmail_api_key",
+
     }.get(provider, "moemail_api_key")
 
 
@@ -1072,6 +1074,8 @@ def _mail_provider_domain_slot(provider: str) -> str:
         "cfmail": "cfmail_domain",
 
         "duckmail": "duckmail_domain",
+
+        "outmail": "outmail_anonymous_domain",
 
     }.get(provider, "moemail_domain")
 
@@ -3837,11 +3841,22 @@ def normalize_registration_config(raw: dict[str, Any] | None) -> dict[str, Any]:
 
     cfg["api_key"] = slot_val
 
+    # Mirror unified "domain" into the active provider slot, but never let an
+    # empty unified field wipe an explicit provider slot (e.g. outmail_anonymous_domain
+    # filled while #domain is blank, or vice versa).
     if "domain" in (raw or {}):
+        domain_val = _normalize_domain_text(cfg.get("domain"))
+        if domain_val:
+            cfg[domain_slot] = domain_val
+        elif not str(cfg.get(domain_slot) or "").strip():
+            cfg[domain_slot] = ""
 
-        cfg[domain_slot] = _normalize_domain_text(cfg.get("domain"))
-
-    cfg["domain"] = _normalize_domain_text(cfg.get(domain_slot))
+    # Prefer the provider-specific slot; fall back to unified domain.
+    cfg["domain"] = _normalize_domain_text(
+        cfg.get(domain_slot) or cfg.get("domain") or ""
+    )
+    if cfg["domain"]:
+        cfg[domain_slot] = cfg["domain"]
 
 
 
@@ -3939,7 +3954,14 @@ def normalize_registration_config(raw: dict[str, Any] | None) -> dict[str, Any]:
 
     cfg["outmail_anonymous_provider"] = str(cfg.get("outmail_anonymous_provider") or "cloudflare").strip().lower() or "cloudflare"
 
-    cfg["outmail_anonymous_domain"] = str(cfg.get("outmail_anonymous_domain") or "").strip()
+    # Keep outmail anonymous domain normalized + mirrored with unified domain.
+    # Explicit outmail_anonymous_domain wins when both are present.
+    _om_dom = _normalize_domain_text(
+        cfg.get("outmail_anonymous_domain") or cfg.get("domain") or ""
+    )
+    cfg["outmail_anonymous_domain"] = _om_dom
+    if mail == "outmail":
+        cfg["domain"] = _om_dom
 
     cfg["outmail_anonymous_username_prefix"] = str(cfg.get("outmail_anonymous_username_prefix") or "").strip()
 
