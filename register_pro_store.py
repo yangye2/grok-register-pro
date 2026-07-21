@@ -12029,6 +12029,52 @@ def list_accounts(
 
 
 
+
+def export_account_txt_lines(
+    emails: list[str] | None = None,
+    *,
+    require_selected: bool = True,
+) -> list[str]:
+    """Export account lines as ``email----password----sso`` (grok-register style).
+
+    When *emails* is non-empty, only those accounts are exported.
+    When empty and *require_selected* is True, returns [] (caller should 400).
+    When empty and *require_selected* is False, exports all accounts that have
+    email or sso.
+    """
+    init_db()
+    clean = sorted(
+        {
+            str(e or "").strip().lower()
+            for e in (emails or [])
+            if str(e or "").strip()
+        }
+    )
+    if not clean and require_selected:
+        return []
+    where = ["1=1"]
+    args: list[Any] = []
+    if clean:
+        where.append("lower(email) IN (" + ",".join("?" for _ in clean) + ")")
+        args.extend(clean)
+    sql = (
+        "SELECT email, password, sso FROM accounts WHERE "
+        + " AND ".join(where)
+        + " ORDER BY updated_at DESC"
+    )
+    with _connect() as conn:
+        rows = conn.execute(sql, args).fetchall()
+    lines: list[str] = []
+    for row in rows:
+        email = str(row["email"] or "").strip()
+        password = str(row["password"] or "").strip()
+        sso = str(row["sso"] or "").strip()
+        if not email and not sso:
+            continue
+        lines.append(f"{email}----{password}----{sso}")
+    return lines
+
+
 def export_sso_rows(
 
     *,

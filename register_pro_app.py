@@ -811,6 +811,14 @@ class ExportSsoBody(BaseModel):
 
 
 
+class ExportAccountsBody(BaseModel):
+    """Export selected accounts as txt: email----password----sso."""
+    emails: list[str] | None = None
+    # When true (default), emails must be non-empty. When false, export all.
+    require_selected: bool = True
+
+
+
 class ExportAuthZipBody(BaseModel):
 
     """Export Auth / CPA zip. When ``emails`` is non-empty, only those accounts."""
@@ -6836,6 +6844,35 @@ async def export_sso(body: ExportSsoBody):
 
 
 
+
+
+
+@app.post(_admin_path('api', 'accounts', 'export'))
+async def export_accounts_txt(body: ExportAccountsBody):
+    """Export accounts as plain text: email----password----sso (one per line).
+
+    Mirrors grok-register /api/accounts/export behaviour for selected accounts.
+    """
+    emails = _clean_emails(body.emails)
+    if body.require_selected and not emails:
+        raise HTTPException(status_code=400, detail="??????")
+    lines = await asyncio.to_thread(
+        pro_store.export_account_txt_lines,
+        emails,
+        require_selected=bool(body.require_selected),
+    )
+    if not lines:
+        raise HTTPException(status_code=404, detail="????????")
+    ts = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    content = "\n".join(lines) + "\n"
+    return Response(
+        content.encode("utf-8"),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="accounts_{ts}.txt"',
+            "X-Export-Count": str(len(lines)),
+        },
+    )
 
 
 @app.post(_admin_path('api', 'accounts', 'convert-sso'))

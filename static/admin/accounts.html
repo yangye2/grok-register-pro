@@ -3419,6 +3419,7 @@
               <button id="export-cpa-accounts" class="btn" type="button" title="有选中则只导出选中；无选中则导出全部">导出 CPA</button>
 
               <button id="export-sso-selected" class="btn" type="button" title="导出选中账号的 SSO（无选中则导出当前筛选状态的全部 SSO）">导出 SSO</button>
+              <button id="export-account-txt" class="btn info" type="button" title="??????? txt?email----password----sso??????">????</button>
 
             </div>
 
@@ -8949,6 +8950,8 @@
         }
 
         setText("selected-count", label);
+        var exportTxtBtn = el("export-account-txt");
+        if (exportTxtBtn) exportTxtBtn.disabled = !(accountState.selected && accountState.selected.size > 0);
 
         setText("page-info", "第 " + accountState.page + " / " + accountState.totalPages + " 页");
 
@@ -10518,7 +10521,55 @@
 
 
 
-      async function exportSsoSelected() {
+      
+      async function exportAccountTxt() {
+        var emails = selectedEmails();
+        if (!emails.length) {
+          toast("??????????");
+          return;
+        }
+        setBadge("accounts-status", "???? " + emails.length + "?", "warn");
+        try {
+          var res = await fetch(__adminUrl("api", "accounts", "export"), {
+            method: "POST",
+            credentials: "same-origin",
+            headers: Object "Content-Type": "application/json", "Accept": "text/plain,*/*" },
+            body: JSON.stringify({ emails: emails, require_selected: true })
+          });
+          if (!res.ok) {
+            var errText = "";
+            try { errText = await res.text(); } catch (e) {}
+            var msg = errText || ("HTTP " + res.status);
+            try {
+              var j = JSON.parse(errText);
+              msg = j.detail || j.error || j.message || msg;
+            } catch (e2) {}
+            throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+          }
+          var blob = await res.blob();
+          var fname = filenameFromDisposition(
+            res.headers.get("content-disposition"),
+            "accounts_" + Date.now() + ".txt"
+          );
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+          var n = res.headers.get("x-export-count") || emails.length;
+          setBadge("accounts-status", "????? " + n, "ok");
+          toast("??? " + n + " ??email----password----sso?");
+        } catch (err) {
+          setBadge("accounts-status", "??????", "bad");
+          toast((err && err.message) || "??????");
+          throw err;
+        }
+      }
+
+async function exportSsoSelected() {
 
         var emails = selectedEmails();
 
@@ -11647,6 +11698,7 @@
         bind("export-cpa-accounts", "click", exportCpaAccounts);
 
         bind("export-sso-selected", "click", exportSsoSelected);
+        bind("export-account-txt", "click", exportAccountTxt);
 
         bind("convert-sso-selected", "click", convertSsoSelected);
 
