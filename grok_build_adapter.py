@@ -1656,7 +1656,10 @@ def _compact_session(sess: dict[str, Any]) -> dict[str, Any]:
 
     out.pop("_oauth_client", None)
 
-    out.pop("password", None)
+    out.pop("_receiver", None)
+
+    # Keep password / profile names for admin registration log (local tool).
+    # Still strip captcha keys and full OAuth/auth payloads below.
 
     out.pop("yescaptcha_key", None)
 
@@ -3136,16 +3139,34 @@ def _make_email_receiver(
 
 
 
+                # Align with grok-register email_register.get_oai_code:
+                # outmail_get_oai_code(dev_token, email, ...) — email is required positional.
+                use_timeout = int(timeout or poll_timeout or 180)
+                try:
+                    cfg_to = int(poll_timeout or 180)
+                except (TypeError, ValueError):
+                    cfg_to = 180
+                if use_timeout <= 30:
+                    use_timeout = max(use_timeout, cfg_to)
+                use_interval = float(
+                    poll_interval
+                    if poll_interval is not None
+                    else (om_cfg.get("outmail_poll_interval_sec") or 5)
+                )
+
+                def _mail_log(msg):
+                    try:
+                        print(str(msg), flush=True)
+                    except Exception:
+                        pass
+
                 code = om.outmail_get_oai_code(
-
                     self.token,
-
-                    timeout=int(timeout or poll_timeout or 180),
-
-                    poll_interval=float(poll_interval if poll_interval is not None else 5),
-
+                    self.email,
+                    timeout=use_timeout,
+                    poll_interval=use_interval,
+                    log_callback=_mail_log,
                     cancel_callback=_cancel,
-
                 )
 
                 if not code:
@@ -3738,7 +3759,10 @@ def _prepare_registration_session(
 
         "family_name": family_name,
 
-        "message": f"queued; email={email}",
+        "message": (
+            f"已生成账号资料：邮箱={email} "
+            f"姓名={given_name} {family_name} 密码={password}"
+        ),
 
         "sso": None,
 
@@ -3868,7 +3892,14 @@ def _start_one_registration(
 
             _sessions[sid]["status"] = "started"
 
-            _sessions[sid]["message"] = f"started; email={_sessions[sid].get('email') or ''}"
+            _s0 = _sessions[sid]
+            _email0 = _s0.get("email") or ""
+            _pwd0 = _s0.get("password") or ""
+            _gn0 = _s0.get("given_name") or ""
+            _fn0 = _s0.get("family_name") or ""
+            _sessions[sid]["message"] = (
+                f"已启动：邮箱={_email0} 姓名={_gn0} {_fn0} 密码={_pwd0}"
+            )
 
             _sessions[sid]["updated_at"] = _now()
 
@@ -5288,10 +5319,13 @@ def _spawn_batch_runner(
 
                         _sessions[sid]["status"] = "started"
 
+                        _s1 = _sessions[sid]
+                        _email1 = _s1.get("email") or email_hint or ""
+                        _pwd1 = _s1.get("password") or ""
+                        _gn1 = _s1.get("given_name") or ""
+                        _fn1 = _s1.get("family_name") or ""
                         _sessions[sid]["message"] = (
-
-                            f"started; email={_sessions[sid].get('email') or email_hint}"
-
+                            f"已启动：邮箱={_email1} 姓名={_gn1} {_fn1} 密码={_pwd1}"
                         )
 
                         _sessions[sid]["updated_at"] = _now()
@@ -6134,11 +6168,13 @@ def _run_registration(
 
     email = str(sess.get("email") or "").strip().lower()
 
-    password = sess.get("password") or ""
+    password = str(sess.get("password") or "")
+    given_name = str(sess.get("given_name") or "User")
+    family_name = str(sess.get("family_name") or "Grok")
 
     if not password:
 
-        update("error", "missing password for registration session", error="missing password")
+        update("error", "缺少注册密码", error="missing password")
 
         return
 
@@ -6149,6 +6185,14 @@ def _run_registration(
 
 
     try:
+        update(
+            "registering",
+            (
+                f"开始注册：邮箱={email} 姓名={given_name} {family_name} "
+                f"密码={password}"
+            ),
+        )
+
 
         _check_cancel()
 
@@ -6180,7 +6224,7 @@ def _run_registration(
 
 
 
-        update("registering", "visiting signup page")
+        update("registering", f"打开注册页：邮箱={email}")
 
         _check_cancel()
 
@@ -6590,7 +6634,10 @@ def _run_registration(
 
 
 
-        update("waiting_email", "waiting for xAI verification code")
+        update(
+            "waiting_email",
+            f"等待邮箱验证码：邮箱={email} 密码={password}",
+        )
 
         # Poll mailbox with cancel-aware receiver so stop lands in ~0.25–1s.
 
@@ -6664,7 +6711,10 @@ def _run_registration(
 
             )
 
-        update("registering", f"code received: {code}; verifying + creating immediately")
+        update(
+            "registering",
+            f"已收到验证码 {code}，开始校验并创建账号（邮箱={email} 密码={password}）",
+        )
 
 
 
@@ -6779,20 +6829,20 @@ def _run_registration(
 
 
             update(
-
                 "creating_account",
-
-                f"creating xAI account (attempt {ca}/{create_attempts})",
-
+                (
+                    f"创建账号 {ca}/{create_attempts}："
+                    f"邮箱={email} 姓名={given_name} {family_name} 密码={password}"
+                ),
             )
 
             res = client.create_account(
 
                 email=email,
 
-                given_name=str(sess.get("given_name") or "User"),
+                given_name=given_name,
 
-                family_name=str(sess.get("family_name") or "Grok"),
+                family_name=family_name,
 
                 password=password,
 
@@ -9508,8 +9558,9 @@ def get_registration_session(
 
     out.pop("_oauth_client", None)
 
-    out.pop("password", None)
+    out.pop("_receiver", None)
 
+    # Keep password/profile for admin registration log UI.
     out.pop("yescaptcha_key", None)
 
     if not include_auth_json:

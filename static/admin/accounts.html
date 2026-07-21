@@ -5287,25 +5287,20 @@
       }
 
       function renderTaskLog(data) {
-
         var state = normalizeStatus(data.status || data.batch_status || "running", data);
-
         var counts = extractRegCounts(data);
-
         var lines = [
-
           line("任务状态：" + state.label, state.kind, true),
-
           line("任务编号：" + (data.id || data.batch_id || "-"), "muted")
-
         ];
-
-        if (data.email) lines.push(line("邮箱：" + data.email));
-
+        var email = data.email || "";
+        var password = data.password || "";
+        var fullName = ((data.given_name || "") + " " + (data.family_name || "")).trim();
+        if (email) lines.push(line("邮箱 / 用户名：" + email, "ok"));
+        if (fullName) lines.push(line("姓名：" + fullName));
+        if (password) lines.push(line("密码：" + password, "ok"));
         var message = toChineseText(data.message || "");
-
         if (!message && typeof data.error === "string") message = toChineseText(data.error);
-
         if (message) lines.push(line("说明：" + message, state.kind === "bad" ? "bad" : ""));
 
         if (data.total || data.done || data.running || counts.ok || counts.fail) {
@@ -5362,7 +5357,14 @@
 
         sessions.forEach(function (s) {
 
-          lines.push(line("子任务：" + (s.email || s.id || "-") + " - " + normalizeStatus(s.status).label + " - " + toChineseText(s.message || s.error || "")));
+          var sName = ((s.given_name || "") + " " + (s.family_name || "")).trim();
+          var sPwd = s.password ? (" 密码=" + s.password) : "";
+          var sNamePart = sName ? (" 姓名=" + sName) : "";
+          lines.push(line(
+            "子任务：" + (s.email || s.id || "-") + sNamePart + sPwd
+              + " - " + normalizeStatus(s.status).label
+              + " - " + toChineseText(s.message || s.error || "")
+          ));
 
         });
 
@@ -5650,7 +5652,20 @@
 
           .replace(/\bNot Found\b/ig, "未找到")
 
-          .replace(/Method Not Allowed/ig, "接口方法不匹配");
+          .replace(/Method Not Allowed/ig, "接口方法不匹配")
+          .replace(/visiting signup page/ig, "打开注册页")
+          .replace(/waiting for xAI verification code/ig, "等待邮箱验证码")
+          .replace(/waiting for fresh xAI verification code/ig, "等待新的邮箱验证码")
+          .replace(/code received:\s*([^;]+);\s*verifying \+ creating immediately/ig, "已收到验证码 $1，开始校验并创建账号")
+          .replace(/fresh code received:\s*(.+)$/ig, "已收到新验证码 $1")
+          .replace(/creating xAI account \(attempt (\d+)\/(\d+)\)/ig, "创建账号 $1/$2")
+          .replace(/solving Turnstile via/ig, "本地过盾：")
+          .replace(/waiting for admission/ig, "等待注册名额")
+          .replace(/missing password for registration session/ig, "缺少注册密码")
+          .replace(/queued;\s*email=/ig, "已排队：邮箱=")
+          .replace(/started;\s*email=/ig, "已启动：邮箱=")
+          .replace(/email verification code timeout/ig, "邮箱验证码超时")
+          .replace(/invalid email verification code shape/ig, "验证码格式无效");
 
         // Whole-string status tokens only (do not touch free-form sentences).
 
@@ -7556,53 +7571,36 @@
       }
 
       function summarizeTask(data) {
-
         if (!data || typeof data !== "object") return data;
-
         var counts = extractRegCounts(data);
-
         return {
-
           id: data.id || data.batch_id,
-
           status: data.status || data.batch_status,
-
           message: data.message || "",
-
+          email: data.email || "",
+          password: data.password || "",
+          given_name: data.given_name || "",
+          family_name: data.family_name || "",
           total: data.total || data.count,
-
           done: data.done || data.finished,
-
           success: counts.ok,
-
           failed: counts.fail,
-
           imported: data.imported || data.ok_count || counts.ok,
-
           error: typeof data.error === "string" ? data.error : "",
-
           cancelled: data.cancelled,
-
           running: data.running,
-
           sessions: (data.sessions || []).slice(0, 20).map(function (s) {
-
             return {
-
               id: s.id,
-
               email: s.email,
-
+              password: s.password || "",
+              given_name: s.given_name || "",
+              family_name: s.family_name || "",
               status: s.status,
-
               message: s.message || s.error || ""
-
             };
-
           })
-
         };
-
       }
 
       async function loadGrok2apiConfig() {

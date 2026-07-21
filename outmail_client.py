@@ -808,6 +808,28 @@ def outmail_generate_temp_email(
     )
 
 
+
+def _outmail_extract_email_list(data):
+    """Normalize Outmail list/detail API payloads into a list of message dicts."""
+    if isinstance(data, list):
+        return [x for x in data if isinstance(x, dict)]
+    if not isinstance(data, dict):
+        return []
+    for key in ("emails", "messages", "items", "results", "data", "list"):
+        val = data.get(key)
+        if isinstance(val, list):
+            return [x for x in val if isinstance(x, dict)]
+        if isinstance(val, dict):
+            for k2 in ("emails", "messages", "items", "results", "data", "list"):
+                val2 = val.get(k2)
+                if isinstance(val2, list):
+                    return [x for x in val2 if isinstance(x, dict)]
+    # Single message object
+    if any(k in data for k in ("subject", "from", "body", "html", "text", "id", "message_id", "messageId")):
+        return [data]
+    return []
+
+
 def outmail_get_temp_email_messages(email, since_ts, limit=20):
     """GET /api/temp-emails/{email}/messages"""
     base = get_outmail_api_base()
@@ -827,9 +849,7 @@ def outmail_get_temp_email_messages(email, since_ts, limit=20):
         raise Exception(f"获取临时邮箱邮件列表 JSON 解析失败: {exc}") from exc
     if isinstance(data, dict) and data.get("success") is False:
         raise Exception(f"获取临时邮箱邮件列表失败: {data}")
-    raw_emails = data.get("emails", []) if isinstance(data, dict) else []
-    if not isinstance(raw_emails, list):
-        raw_emails = []
+    raw_emails = _outmail_extract_email_list(data)
     emails = outmail_filter_emails_since(raw_emails, since_ts)
     emails.sort(key=lambda x: outmail_parse_email_timestamp(x) or 0, reverse=True)
     meta = data if isinstance(data, dict) else {"raw": data}
@@ -873,9 +893,7 @@ def outmail_refresh_temp_email_messages(email, since_ts, limit=20):
             raise Exception(f"刷新临时邮箱邮件 JSON 解析失败: {exc}") from exc
     if isinstance(data, dict) and data.get("success") is False:
         raise Exception(f"刷新临时邮箱邮件失败: {data}")
-    raw_emails = data.get("emails", []) if isinstance(data, dict) else []
-    if not isinstance(raw_emails, list):
-        raw_emails = []
+    raw_emails = _outmail_extract_email_list(data)
     emails = outmail_filter_emails_since(raw_emails, since_ts)
     emails.sort(key=lambda x: outmail_parse_email_timestamp(x) or 0, reverse=True)
     meta = data if isinstance(data, dict) else {"raw": data}
@@ -1043,13 +1061,7 @@ def outmail_get_recent_emails(
     data = resp.json()
     if isinstance(data, dict) and data.get("success") is False:
         raise Exception(f"Outmail 获取邮件失败: {data}")
-    raw_emails = []
-    if isinstance(data, dict):
-        raw_emails = data.get("emails") or data.get("messages") or data.get("data") or []
-    elif isinstance(data, list):
-        raw_emails = data
-    if not isinstance(raw_emails, list):
-        raw_emails = []
+    raw_emails = _outmail_extract_email_list(data)
     emails = outmail_filter_emails_since(raw_emails, since_ts)
     emails.sort(key=lambda x: outmail_parse_email_timestamp(x) or 0, reverse=True)
     meta = data if isinstance(data, dict) else {"raw": data}
@@ -1165,8 +1177,13 @@ def outmail_filter_emails_since(emails, since_ts):
     filtered = []
     for mail in emails or []:
         mail_ts = outmail_parse_email_timestamp(mail)
+        # Keep mails with unknown timestamp — some Outmail temp providers omit date fields.
         if mail_ts is None or mail_ts >= since_ts:
             filtered.append(mail)
+    # If strict since filtering empties a non-empty inbox, fall back to raw list.
+    # (Clock skew / missing timestamps should not drop real verification mails.)
+    if not filtered and emails:
+        return list(emails)
     return filtered
 
 
@@ -1683,7 +1700,7 @@ def outmail_extract_code_from_mails(mails):
 
 def outmail_get_oai_code(
     dev_token,
-    email,
+    email=None,
     timeout=None,
     poll_interval=None,
     log_callback=None,
