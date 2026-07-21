@@ -1,4 +1,4 @@
-# grok-register-pro — full image with Camoufox browser baked in
+# grok-register-pro: app + inline turnstile solver + Camoufox
 # One image = app + local turnstile solver + browser
 FROM python:3.12-slim-bookworm
 

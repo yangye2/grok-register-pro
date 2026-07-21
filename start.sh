@@ -123,8 +123,8 @@ if command -v lsof >/dev/null 2>&1; then
 fi
 
 echo "注册机: http://${HOST}:${PORT}/admin/accounts"
-echo "数据目录: ${GROK_REGISTER_PRO_DATA_DIR}"
-echo "数据库:   ${GROK_REGISTER_PRO_DB}"
+echo "data dir: ${GROK_REGISTER_PRO_DATA_DIR}"
+echo "database: ${GROK_REGISTER_PRO_DB}"
 export GROK_REGISTER_PRO_HOST="${HOST}"
 export GROK_REGISTER_PRO_PORT="${PORT}"
 export GROK_REGISTER_PRO_PID_FILE="${PID_FILE}"

@@ -48,7 +48,7 @@ services:
       GROK2API_MOEMAIL_DOMAIN: "${GROK2API_MOEMAIL_DOMAIN:-}"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8788${GROK_REGISTER_ADMIN_BASE_PATH:-/admin}/api/session"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8788/healthz"]
       interval: 30s
       timeout: 5s
       start_period: 90s

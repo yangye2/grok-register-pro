@@ -65,7 +65,7 @@ os.environ.setdefault("GROK2API_REG_PROBE_DELAY_SEC", "0")
 
 from fastapi import FastAPI, HTTPException, Request
 
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 
 from fastapi.staticfiles import StaticFiles
 
@@ -5061,6 +5061,23 @@ def _start_local_solver(thread: int = 1, browser_type: str = "camoufox", force: 
 
 
 
+
+
+
+@app.get("/healthz")
+async def healthz():
+    """Public liveness probe (no admin auth)."""
+    return {"ok": True, "service": "grok-register-pro"}
+
+
+@app.get("/readyz")
+async def readyz():
+    """Public readiness: DB file path is writable/initable."""
+    try:
+        pro_store.init_db()
+        return {"ok": True, "db": str(pro_store.DB_PATH)}
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse(status_code=503, content={"ok": False, "error": str(exc)[:200]})
 
 
 @app.get("/")

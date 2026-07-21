@@ -1486,22 +1486,19 @@ def outmail_mark_mailbox_used(mailbox, register_email="", reason="success", log_
                 _outmail_used_cache = counts
         except Exception as exc:
             if log_callback:
-                log_callback(f"[Debug] ????????: {exc}")
+                log_callback(f"[Debug] mark used failed: {exc}")
             try:
                 _outmail_used_cache = _parse_file()
             except Exception:
                 pass
             return False
     if log_callback:
+        msg = f"[Debug] Outmail usage {new_n}/{limit} mailbox={mb}"
+        if reg:
+            msg += f" (alias={reg})"
         if new_n >= limit:
-            log_callback(
-                f"[Debug] Outmail ????????? {new_n}/{limit}?????: {mb}"
-            )
-        else:
-            msg = f"[Debug] Outmail ??????? {new_n}/{limit}: {mb}"
-            if reg:
-                msg += f" (alias={reg})"
-            log_callback(msg)
+            msg += " (quota reached)"
+        log_callback(msg)
     return True
 
 
