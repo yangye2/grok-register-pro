@@ -1,0 +1,76 @@
+# Keep Docker build context anonymous and small for public images.
+# NEVER bake local DBs, secrets, caches, or host identity into public images.
+
+# VCS / IDE / local tooling
+.git
+.github
+.venv
+venv
+__pycache__
+**/__pycache__
+*.py[cod]
+*.egg-info
+.DS_Store
+.idea
+.vscode
+.claude
+.cursor
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# Secrets / local env (NEVER bake)
+.env
+.env.*
+!.env.example
+**/*.pem
+**/*.key
+**/id_rsa
+**/id_rsa.pub
+**/auth.json
+**/keys.json
+**/*secret*
+**/*credential*
+**/*cookie*
+**/*token*.json
+
+# Local runtime data (DB, SSO dumps, exports, host browser cache)
+data/
+generated/
+**/register_pro.sqlite3*
+**/*.sqlite3
+**/*.sqlite
+**/*.db
+**/sso_output/
+**/cliproxyapi_auth/
+turnstile-solver/.venv/
+turnstile-solver/logs/
+turnstile-solver/keys/
+turnstile-solver/**/__pycache__/
+grok-build-auth/**/__pycache__/
+grok-build-auth/.env
+grok-build-auth/sso_output/
+grok-build-auth/cliproxyapi_auth/
+grok-build-auth/**/*.json
+!grok-build-auth/**/requirements*.txt
+
+# Host OS / editor junk
+.AppleDouble
+.LSOverride
+Icon?
+**/.DS_Store
+
+# Docs / legal noise (keep short README only)
+*.md
+!README.md
+LICENSE
+NOTICE
+docs/
+
+# Local-only helper noise
+scripts/_*
+**/test_*.py
+**/*_test.py
+**/__pycache__/

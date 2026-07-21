@@ -1,0 +1,13 @@
+# Local Turnstile Solver (subproject of grok-register-pro)
+# Pins aligned to server image puritan3116/grok-register-pro:1.2.17 (2026-07-19)
+quart==0.20.0
+camoufox==0.5.3
+patchright==1.61.2
+playwright==1.60.0
+browserforge==1.2.4
+rich==15.0.0
+rich-click==1.9.8
+requests>=2.31
+python-dotenv>=1.0
+# Local no-auth SOCKS/HTTP bridge for Camoufox: Firefox cannot do SOCKS5 auth.
+python-socks[asyncio]>=2.4.3

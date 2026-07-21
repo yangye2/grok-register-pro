@@ -1,0 +1,5 @@
+# Local Turnstile Solver - thin pointer for bare installs.
+# Docker builds use turnstile-solver/requirements.txt (pinned).
+# Prefer that file for parity with the image:
+#   pip install -r turnstile-solver/requirements.txt
+-r turnstile-solver/requirements.txt

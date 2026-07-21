@@ -1,0 +1,44 @@
+# Python
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+**/*.pem
+**/*.key
+**/id_rsa
+**/id_rsa.pub
+
+# Runtime data
+data/
+generated/
+**/register_pro.sqlite3*
+**/*.sqlite3
+**/*.sqlite
+**/*.db
+**/sso_output/
+**/cliproxyapi_auth/
+turnstile-solver/.venv/
+turnstile-solver/logs/
+turnstile-solver/keys/
+
+# Local OS / IDE
+.DS_Store
+.idea/
+.vscode/
+.claude/
+.cursor/
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+
+# Docker copy residue / tooling
+manifest.json

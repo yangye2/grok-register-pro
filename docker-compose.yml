@@ -1,0 +1,55 @@
+services:
+  register-pro:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${GROK_REGISTER_IMAGE:-grok-register-pro:local}
+    container_name: grok-register-pro
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "${GROK_REGISTER_PRO_PORT:-8788}:8788"
+    shm_size: "1gb"
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - ${GROK_REGISTER_HOST_DATA_DIR:-./data/register_pro}:/data
+    environment:
+      TZ: "${TZ:-Asia/Shanghai}"
+      GROK_REGISTER_PRO: "1"
+      GROK_REGISTER_PRO_HOST: "0.0.0.0"
+      GROK_REGISTER_PRO_PORT: "8788"
+      GROK_REGISTER_PRO_DATA_DIR: "/data"
+      GROK_REGISTER_PRO_DB: "/data/register_pro.sqlite3"
+      GROK_REGISTER_PRO_OUTPUT_DIR: "/data/outputs"
+      GROK2API_AUTH_FILE: "/data/outputs/grok2api_auth.json"
+      GROK_REGISTER_ADMIN_BASE_PATH: "${GROK_REGISTER_ADMIN_BASE_PATH:-/admin}"
+      GROK_REGISTER_ADMIN_BOOTSTRAP_PASSWORD: "${GROK_REGISTER_ADMIN_BOOTSTRAP_PASSWORD:-}"
+      GROK_REGISTER_ADMIN_FORCE_RESET: "${GROK_REGISTER_ADMIN_FORCE_RESET:-0}"
+      GROK_REGISTER_ALLOW_PRIVATE_URLS: "${GROK_REGISTER_ALLOW_PRIVATE_URLS:-1}"
+      GROK_REGISTER_ALLOW_HTTP_URLS: "${GROK_REGISTER_ALLOW_HTTP_URLS:-0}"
+      GROK2API_CAPTCHA_PROVIDER: "local"
+      CAPTCHA_PROVIDER: "local"
+      GROK2API_LOCAL_SOLVER_URL: "http://127.0.0.1:5072"
+      LOCAL_SOLVER_URL: "http://127.0.0.1:5072"
+      GROK2API_INLINE_SOLVER: "1"
+      TURNSTILE_HOST: "127.0.0.1"
+      TURNSTILE_PORT: "5072"
+      TURNSTILE_THREAD: "${TURNSTILE_THREAD:-1}"
+      TURNSTILE_BROWSER_TYPE: "camoufox"
+      # Keep pool warm; short idle reclaim caused empty-pool / CAPTCHA storms.
+      TURNSTILE_LAZY: "${TURNSTILE_LAZY:-0}"
+      TURNSTILE_IDLE_SEC: "${TURNSTILE_IDLE_SEC:-0}"
+      TURNSTILE_BROWSER_AUTO_FETCH: "${TURNSTILE_BROWSER_AUTO_FETCH:-1}"
+      GROK2API_XAI_PROXY_POOL: "${GROK2API_XAI_PROXY_POOL:-}"
+      GROK2API_MOEMAIL_API_KEY: "${GROK2API_MOEMAIL_API_KEY:-}"
+      GROK2API_MOEMAIL_BASE_URL: "${GROK2API_MOEMAIL_BASE_URL:-}"
+      GROK2API_MOEMAIL_DOMAIN: "${GROK2API_MOEMAIL_DOMAIN:-}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8788${GROK_REGISTER_ADMIN_BASE_PATH:-/admin}/api/session"]
+      interval: 30s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
