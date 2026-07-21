@@ -3330,8 +3330,9 @@
                         </div>
                         <div class="span-2 outmail-checks">
                           <label class="header-check" for="outmail_plus_alias"><input id="outmail_plus_alias" type="checkbox" checked /> Plus 别名</label>
-                          <label class="header-check" for="outmail_anonymous_enabled"><input id="outmail_anonymous_enabled" type="checkbox" /> 匿名临时邮箱</label>
                           <label class="header-check" for="outmail_exclude_used"><input id="outmail_exclude_used" type="checkbox" checked /> 排除已用邮箱</label>
+                          <label class="header-check" for="outmail_anonymous_enabled"><input id="outmail_anonymous_enabled" type="checkbox" /> 匿名临时邮箱</label>
+                          <label class="header-check" for="outmail_anonymous_delete_after" title="仅匿名模式生效：注册流程结束后调用 DELETE 删除临时邮箱"><input id="outmail_anonymous_delete_after" type="checkbox" /> 注册后删除匿名邮箱</label>
                         </div>
                       </div>
                     </div>
@@ -4919,7 +4920,7 @@
 
         if (view === "settings") {
 
-          loadScheduleStatus().catch(function () {});
+          loadScheduleStatus({applyPolicy: true}).catch(function () {});
 
           startScheduleStatusPoll();
 
@@ -6136,6 +6137,7 @@
           payload.outmail_poll_timeout_sec = numberValue("outmail_poll_timeout_sec", 180);
           payload.outmail_poll_interval_sec = numberValue("outmail_poll_interval_sec", 5);
           payload.outmail_anonymous_enabled = !!(el("outmail_anonymous_enabled") && el("outmail_anonymous_enabled").checked);
+          payload.outmail_anonymous_delete_after = !!(el("outmail_anonymous_delete_after") && el("outmail_anonymous_delete_after").checked);
           payload.outmail_exclude_used = !!(el("outmail_exclude_used") && el("outmail_exclude_used").checked);
           payload.outmail_group_id = (el("outmail_group_id") && el("outmail_group_id").value) || "";
           payload.outmail_anonymous_provider = (el("outmail_anonymous_provider") && el("outmail_anonymous_provider").value) || "cloudflare";
@@ -6596,6 +6598,7 @@
         if (el("outmail_poll_timeout_sec")) el("outmail_poll_timeout_sec").value = (cfg.outmail_poll_timeout_sec == null ? 180 : cfg.outmail_poll_timeout_sec);
         if (el("outmail_poll_interval_sec")) el("outmail_poll_interval_sec").value = (cfg.outmail_poll_interval_sec == null ? 5 : cfg.outmail_poll_interval_sec);
         if (el("outmail_anonymous_enabled")) el("outmail_anonymous_enabled").checked = !!cfg.outmail_anonymous_enabled;
+        if (el("outmail_anonymous_delete_after")) el("outmail_anonymous_delete_after").checked = !!cfg.outmail_anonymous_delete_after;
         if (el("outmail_exclude_used")) el("outmail_exclude_used").checked = cfg.outmail_exclude_used !== false;
         if (el("outmail_anonymous_provider")) el("outmail_anonymous_provider").value = cfg.outmail_anonymous_provider || "cloudflare";
         var omDom = cfg.outmail_anonymous_domain || cfg.domain || "";
@@ -8055,13 +8058,17 @@
 
       }
 
-      function applySchedulePolicy(pol) {
+      function applySchedulePolicy(pol, opts) {
 
         if (!pol) return;
 
+        opts = opts || {};
+
         // Never clobber an in-progress edit, even if a caller asks to apply policy.
 
-        if (scheduleFormDirty || isScheduleFieldActive()) return;
+        // force=true is for initial boot / explicit reload after save.
+
+        if (!opts.force && (scheduleFormDirty || isScheduleFieldActive())) return;
 
         setChecked("schedule_enabled", !!pol.enabled);
 
@@ -8145,7 +8152,7 @@
 
         // explicitly requested (initial load / after save), never on the 15s poll.
 
-        if (opts.applyPolicy && st.policy) applySchedulePolicy(st.policy);
+        if (opts.applyPolicy && st.policy) applySchedulePolicy(st.policy, {force: !!opts.force});
 
         var pol = st.policy || {};
 
@@ -8245,7 +8252,7 @@
 
         clearScheduleFormDirty();
 
-        applySchedulePolicy(data.policy);
+        applySchedulePolicy(data.policy, {force: true});
 
         setBadge("schedule-status", "已保存", "ok");
 
@@ -11597,7 +11604,7 @@ bind("export-account-txt", "click", exportAccountTxt);
 
           loadReloginConfig(),
 
-          loadScheduleStatus().catch(function () { return null; }),
+          loadScheduleStatus({applyPolicy: true, force: true}).catch(function () { return null; }),
 
           refreshAccounts(),
 
