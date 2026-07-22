@@ -2351,6 +2351,100 @@
 
     .operation-dialog.minimized .operation-head { border-bottom: 0; }
 
+    .recycle-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .recycle-mask.open { display: flex; }
+    .recycle-dialog {
+      width: min(920px, calc(100vw - 24px));
+      max-height: min(82vh, 760px);
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .recycle-head, .recycle-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .recycle-foot {
+      border-bottom: 0;
+      border-top: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+    .recycle-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .recycle-meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .recycle-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .recycle-body {
+      padding: 0;
+      overflow: auto;
+      min-height: 220px;
+    }
+    .recycle-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .recycle-table th,
+    .recycle-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+    .recycle-table th {
+      position: sticky;
+      top: 0;
+      background: var(--panel);
+      z-index: 1;
+      font-weight: 700;
+    }
+    .recycle-table td.email-cell {
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .recycle-empty {
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .recycle-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text);
+      user-select: none;
+    }
+
     .toast {
 
       position: fixed;
@@ -3056,6 +3150,47 @@
 
   </aside>
 
+  <div id="recycle-mask" class="recycle-mask" aria-hidden="true">
+    <section class="recycle-dialog" role="dialog" aria-modal="true" aria-labelledby="recycle-title">
+      <div class="recycle-head">
+        <div>
+          <p id="recycle-title" class="recycle-title">回收站</p>
+          <div id="recycle-meta" class="recycle-meta">假删除账号列表</div>
+        </div>
+        <div class="recycle-actions">
+          <button id="recycle-refresh" class="btn ghost" type="button">刷新</button>
+          <button id="recycle-close" class="btn ghost" type="button">关闭</button>
+        </div>
+      </div>
+      <div class="recycle-body">
+        <table class="recycle-table" aria-label="回收站账号">
+          <thead>
+            <tr>
+              <th style="width:36px"><input id="recycle-select-all" type="checkbox" title="全选" /></th>
+              <th>邮箱</th>
+              <th>状态</th>
+              <th>删除时间</th>
+              <th>凭据</th>
+            </tr>
+          </thead>
+          <tbody id="recycle-tbody"></tbody>
+        </table>
+        <div id="recycle-empty" class="recycle-empty is-hidden">回收站为空</div>
+      </div>
+      <div class="recycle-foot">
+        <label class="recycle-check" for="recycle-overwrite">
+          <input id="recycle-overwrite" type="checkbox" />
+          覆盖已存在同邮箱账号
+        </label>
+        <div class="recycle-actions">
+          <button id="recycle-restore-selected" class="btn primary" type="button">恢复选中</button>
+          <button id="recycle-restore-all" class="btn" type="button">恢复全部</button>
+          <button id="recycle-purge-all" class="btn danger" type="button">清空回收站</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <div id="login-screen" class="login-screen" aria-label="管理员登录">
 
     <section class="login-card">
@@ -3586,6 +3721,8 @@
 
                 <option value="credentials_only">仅密码</option>
 
+                <option value="remote_only">仅远端</option>
+
                 <option value="probe_failed">测活失败</option>
 
                 <option value="failed">失败</option>
@@ -3740,6 +3877,9 @@
               <button id="relogin-selected" class="btn primary" type="button">重登</button>
 
               <button id="delete-selected" class="btn danger" type="button">删除选中</button>
+
+              <button id="restore-backup" class="btn ghost" type="button" title="从删除前自动生成的备份 JSON 恢复账号">恢复备份</button>
+              <button id="open-recycle" class="btn ghost" type="button" title="查看并恢复假删除账号">回收站</button>
 
             </div>
 
@@ -4734,6 +4874,8 @@
 
       };
 
+      var REG_RATE_STORAGE_KEY = "grok_register_reg_rate_state_v1";
+
       var appBooted = false;
 
       var setupRequired = false;
@@ -5502,6 +5644,17 @@
         if (data.error) lines.push(line("错误：" + toChineseText(data.error), "bad"));
 
         if (data.deleted != null) lines.push(line("已删除：" + data.deleted + " 个", "ok"));
+        if (data.recycled != null) lines.push(line("已入回收站：" + data.recycled + " 个", data.recycled ? "ok" : ""));
+        if (data.soft_deleted != null) lines.push(line("删除方式：" + (data.soft_deleted ? "假删除（可恢复）" : "硬删除"), data.soft_deleted ? "ok" : "warn"));
+        if (data.purged != null) lines.push(line("已清空回收站：" + data.purged + " 个", data.purged ? "warn" : ""));
+
+        if (data.restored != null) lines.push(line("已恢复：" + data.restored + " 个", data.restored ? "ok" : ""));
+
+        if (data.overwritten != null && data.overwritten) lines.push(line("已覆盖：" + data.overwritten + " 个", "warn"));
+
+        if (data.skipped_existing != null && data.skipped_existing) lines.push(line("已存在跳过：" + data.skipped_existing + " 个", "warn"));
+
+        if (data.skipped_invalid != null && data.skipped_invalid) lines.push(line("无效记录跳过：" + data.skipped_invalid + " 个", "warn"));
 
         if (data.backup_path) lines.push(line("备份：" + data.backup_path, "ok"));
 
@@ -5509,7 +5662,9 @@
 
         if (data.matched_local != null) lines.push(line("本地匹配：" + data.matched_local));
 
-        if (data.remote_only_failures != null) lines.push(line("远端异常但本地缺账号密码：" + data.remote_only_failures, data.remote_only_failures ? "warn" : "ok"));
+        if (data.generated_local_accounts != null) lines.push(line("已生成本地占位账号：" + data.generated_local_accounts, data.generated_local_accounts ? "ok" : ""));
+
+        if (data.remote_only_failures != null) lines.push(line("远端异常但本地仍缺账号：" + data.remote_only_failures, data.remote_only_failures ? "warn" : "ok"));
 
         if (data.provider_counts) {
 
@@ -5548,6 +5703,14 @@
         if (data.config) lines.push(line("配置已保存。", "ok"));
 
         if (data.deleted != null) lines.push(line("已删除：" + data.deleted + " 个", "ok"));
+
+        if (data.restored != null) lines.push(line("已恢复：" + data.restored + " 个", data.restored ? "ok" : ""));
+
+        if (data.overwritten != null && data.overwritten) lines.push(line("已覆盖：" + data.overwritten + " 个", "warn"));
+
+        if (data.skipped_existing != null && data.skipped_existing) lines.push(line("已存在跳过：" + data.skipped_existing + " 个", "warn"));
+
+        if (data.skipped_invalid != null && data.skipped_invalid) lines.push(line("无效记录跳过：" + data.skipped_invalid + " 个", "warn"));
 
         if (data.backup_path) lines.push(line("备份：" + data.backup_path, "ok"));
 
@@ -7085,17 +7248,111 @@
 
       }
 
-      function resetRegRate(taskId) {
+      function regTimestampToMs(value) {
+
+        if (value == null || value === "") return 0;
+
+        var n = Number(value);
+
+        if (Number.isFinite(n) && n > 0) return n < 10000000000 ? n * 1000 : n;
+
+        var parsed = Date.parse(value);
+
+        return Number.isFinite(parsed) ? parsed : 0;
+
+      }
+
+      function extractRegStartedAt(data) {
+
+        data = data || {};
+
+        return regTimestampToMs(data.started_at || data.created_at || data.start_time || data.startedAt);
+
+      }
+
+      function saveRegRateState() {
+
+        try {
+
+          if (!regRateState.taskId) {
+
+            localStorage.removeItem(REG_RATE_STORAGE_KEY);
+
+            return;
+
+          }
+
+          localStorage.setItem(REG_RATE_STORAGE_KEY, JSON.stringify({
+
+            taskId: regRateState.taskId,
+
+            startedAt: regRateState.startedAt || 0,
+
+            samples: regRateState.samples || [],
+
+            savedAt: Date.now()
+
+          }));
+
+        } catch (e) {}
+
+      }
+
+      function resetRegRate(taskId, startedAtMs) {
 
         regRateState.taskId = taskId || null;
 
-        regRateState.startedAt = taskId ? Date.now() : 0;
+        var now = Date.now();
 
-        regRateState.samples = [];
+        var started = taskId ? (Number(startedAtMs || 0) || now) : 0;
+
+        var samples = [];
+
+        if (taskId) {
+
+          try {
+
+            var saved = JSON.parse(localStorage.getItem(REG_RATE_STORAGE_KEY) || "null");
+
+            if (saved && saved.taskId === taskId) {
+
+              var savedStarted = Number(saved.startedAt || 0);
+
+              if (savedStarted > 0 && (!startedAtMs || savedStarted < started)) started = savedStarted;
+
+              if (Array.isArray(saved.samples)) {
+
+                samples = saved.samples.filter(function (sample) {
+
+                  var t = Number(sample && sample.t);
+
+                  var ok = Number(sample && sample.ok);
+
+                  return Number.isFinite(t) && Number.isFinite(ok) && t <= now + 60000 && t >= now - 600000;
+
+                }).map(function (sample) {
+
+                  return { t: Number(sample.t), ok: Math.max(0, Number(sample.ok || 0)) };
+
+                });
+
+              }
+
+            }
+
+          } catch (e) {}
+
+        }
+
+        regRateState.startedAt = started;
+
+        regRateState.samples = samples;
 
         setBadge("reg-rate", "速度：--/分", "");
 
         setBadge("reg-elapsed", "计时：--", "");
+
+        saveRegRateState();
 
       }
 
@@ -7119,7 +7376,7 @@
 
       }
 
-      function updateRegRate(taskId, okCount, isTerminal) {
+      function updateRegRate(taskId, okCount, isTerminal, startedAtMs) {
 
         var now = Date.now();
 
@@ -7139,13 +7396,19 @@
 
           regRateState.taskId = taskId;
 
-          regRateState.startedAt = now;
+          regRateState.startedAt = Number(startedAtMs || 0) || now;
 
           regRateState.samples = [];
 
         }
 
         if (!regRateState.startedAt) regRateState.startedAt = now;
+
+        if (startedAtMs && startedAtMs > 0 && startedAtMs < regRateState.startedAt) {
+
+          regRateState.startedAt = startedAtMs;
+
+        }
 
         // Keep a rolling window of success counts for the last ~2 minutes.
 
@@ -7214,6 +7477,8 @@
         setBadge("reg-rate", "速度：" + rateText, ratePerMin && ratePerMin > 0 ? "ok" : "");
 
         setBadge("reg-elapsed", "计时：" + formatElapsed(elapsedMs), "");
+
+        saveRegRateState();
 
         return { ratePerMin: ratePerMin, elapsedMs: elapsedMs, rateText: rateText };
 
@@ -7305,7 +7570,7 @@
 
         }
 
-        if (regTask) resetRegRate(regTask.id);
+        if (regTask) resetRegRate(regTask.id, extractRegStartedAt(data));
 
         setText("reg-task", "任务：" + (regTask ? regTask.id : "--"));
 
@@ -7315,7 +7580,7 @@
 
         setRegCounts(counts.ok, counts.fail);
 
-        if (regTask) updateRegRate(regTask.id, counts.ok, false);
+        if (regTask) updateRegRate(regTask.id, counts.ok, false, extractRegStartedAt(data));
 
         log("reg-log", data);
 
@@ -7401,7 +7666,7 @@
 
             regTask = {type: picked.type, id: picked.id};
 
-            if (regRateState.taskId !== regTask.id) resetRegRate(regTask.id);
+            if (regRateState.taskId !== regTask.id) resetRegRate(regTask.id, extractRegStartedAt(picked.raw));
 
           } else {
 
@@ -7447,7 +7712,7 @@
 
         setRegCounts(counts.ok, counts.fail);
 
-        var rateInfo = updateRegRate(regTask.id, counts.ok, state.terminal);
+        var rateInfo = updateRegRate(regTask.id, counts.ok, state.terminal, extractRegStartedAt(data));
 
         data._rateInfo = rateInfo;
 
@@ -7596,6 +7861,8 @@
           probe_failed: "测活失败",
 
           credentials_only: "仅密码",
+
+          remote_only: "仅远端",
 
           sso_pending: "待授权",
 
@@ -9616,7 +9883,7 @@
 
         var kind = (s === "active" || s === "registered" || s === "ok" || s === "imported" || s === "done" || s === "relogged" || s === "normal") ? "ok"
 
-          : (s === "untested" || s === "running" || s === "partial" || s === "missing" || s === "queued" || s === "candidate" || s === "credentials_only" || s === "sso_pending" || s === "not_imported" || s === "not_synced" || s === "wait") ? "warn" : "bad";
+          : (s === "untested" || s === "running" || s === "partial" || s === "missing" || s === "queued" || s === "candidate" || s === "credentials_only" || s === "remote_only" || s === "sso_pending" || s === "not_imported" || s === "not_synced" || s === "wait") ? "warn" : "bad";
 
         // Labels:
 
@@ -9639,6 +9906,8 @@
         if (s === "probe_failed") label = "测活失败";
 
         if (s === "credentials_only") label = "仅密码";
+
+        if (s === "remote_only") label = "仅远端";
 
         if (s === "sso_pending") label = "待授权";
 
@@ -10170,7 +10439,7 @@
 
         }
 
-        if (!confirm("删除选中的 " + emails.length + " 个账号？删除前会自动备份。")) return;
+        if (!confirm("假删除选中的 " + emails.length + " 个账号？\n会进入回收站，并可额外写备份文件，之后可从回收站恢复。")) return;
 
         setBadge("accounts-status", "删除中", "warn");
 
@@ -10188,7 +10457,331 @@
 
         accountState.selected.clear();
 
-        toast("已删除：" + (data.deleted || 0));
+        toast("已移入回收站：" + (data.recycled || data.deleted || 0));
+
+        await refreshAccounts();
+
+      }
+
+      var recycleState = {
+        items: [],
+        selected: new Set(),
+        loading: false
+      };
+
+      function formatRecycleTime(ts) {
+        var n = Number(ts || 0);
+        if (!n) return "-";
+        try {
+          return new Date(n * 1000).toLocaleString();
+        } catch (e) {
+          return String(ts);
+        }
+      }
+
+      function recycleCredentialTags(item) {
+        var tags = [];
+        if (item && item.has_password) tags.push("密码");
+        if (item && item.has_sso) tags.push("SSO");
+        if (item && item.has_cpa) tags.push("CPA");
+        if (item && item.has_grok2api) tags.push("Auth");
+        return tags.length ? tags.join(" / ") : "无";
+      }
+
+      function openRecycleDialog() {
+        var mask = el("recycle-mask");
+        if (!mask) return;
+        mask.classList.add("open");
+        mask.setAttribute("aria-hidden", "false");
+      }
+
+      function closeRecycleDialog() {
+        var mask = el("recycle-mask");
+        if (!mask) return;
+        mask.classList.remove("open");
+        mask.setAttribute("aria-hidden", "true");
+      }
+
+      function updateRecycleSelectionUi() {
+        var all = el("recycle-select-all");
+        var total = recycleState.items.length;
+        var selected = recycleState.selected.size;
+        if (all) {
+          all.checked = total > 0 && selected === total;
+          all.indeterminate = selected > 0 && selected < total;
+        }
+        setText("recycle-meta", "共 " + total + " 个，已选 " + selected + " 个");
+        var restoreSelected = el("recycle-restore-selected");
+        if (restoreSelected) restoreSelected.disabled = selected === 0 || recycleState.loading;
+        var restoreAll = el("recycle-restore-all");
+        if (restoreAll) restoreAll.disabled = total === 0 || recycleState.loading;
+        var purgeAll = el("recycle-purge-all");
+        if (purgeAll) purgeAll.disabled = total === 0 || recycleState.loading;
+      }
+
+      function renderRecycleTable() {
+        var tbody = el("recycle-tbody");
+        var empty = el("recycle-empty");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        var items = recycleState.items || [];
+        if (!items.length) {
+          if (empty) {
+            empty.classList.remove("is-hidden");
+            empty.textContent = "回收站为空";
+          }
+          updateRecycleSelectionUi();
+          return;
+        }
+        if (empty) empty.classList.add("is-hidden");
+        items.forEach(function (item) {
+          var email = String(item.email || "").toLowerCase();
+          var tr = document.createElement("tr");
+          var checked = recycleState.selected.has(email) ? " checked" : "";
+          tr.innerHTML =
+            '<td><input type="checkbox" class="recycle-item-check" data-email="' + escapeHtml(email) + '"' + checked + " /></td>" +
+            '<td class="email-cell mono" title="' + escapeHtml(email) + '">' + escapeHtml(email) + "</td>" +
+            "<td>" + escapeHtml(item.status || "-") + "</td>" +
+            "<td>" + escapeHtml(formatRecycleTime(item.deleted_at)) + "</td>" +
+            "<td>" + escapeHtml(recycleCredentialTags(item)) + "</td>";
+          tbody.appendChild(tr);
+        });
+        updateRecycleSelectionUi();
+      }
+
+      async function loadRecycleBin(options) {
+        options = options || {};
+        recycleState.loading = true;
+        updateRecycleSelectionUi();
+        try {
+          var data = await api(__adminUrl("api", "accounts", "recycle") + "?limit=500");
+          var items = Array.isArray(data.items) ? data.items : [];
+          recycleState.items = items;
+          var keep = new Set();
+          items.forEach(function (item) {
+            var email = String(item.email || "").toLowerCase();
+            if (email && recycleState.selected.has(email)) keep.add(email);
+          });
+          recycleState.selected = keep;
+          renderRecycleTable();
+          if (!options.silent) log("accounts-log", data);
+          setBadge("accounts-status", items.length ? ("回收站 " + items.length + " 个") : "回收站为空", items.length ? "warn" : "ok");
+          return data;
+        } finally {
+          recycleState.loading = false;
+          updateRecycleSelectionUi();
+        }
+      }
+
+      async function openRecycleBin() {
+        openRecycleDialog();
+        setBadge("accounts-status", "读取回收站", "warn");
+        try {
+          await loadRecycleBin();
+        } catch (err) {
+          setBadge("accounts-status", "回收站读取失败", "bad");
+          toast((err && err.message) || "回收站读取失败");
+          log("accounts-log", err && err.payload ? err.payload : {ok: false, error: (err && err.message) || "读取失败"});
+        }
+      }
+
+      async function restoreRecycleSelected() {
+        var emails = Array.from(recycleState.selected || []);
+        if (!emails.length) {
+          toast("先选择回收站账号");
+          return;
+        }
+        var overwrite = !!(el("recycle-overwrite") && el("recycle-overwrite").checked);
+        if (!confirm("恢复选中的 " + emails.length + " 个账号？" + (overwrite ? "\n将覆盖已存在同邮箱账号。" : "\n已存在同邮箱账号会跳过。"))) return;
+        recycleState.loading = true;
+        updateRecycleSelectionUi();
+        setBadge("accounts-status", "回收站恢复中", "warn");
+        try {
+          var data = await api(__adminUrl("api", "accounts", "recycle", "restore"), {
+            method: "POST",
+            body: JSON.stringify({emails: emails, restore_all: false, overwrite: overwrite})
+          });
+          log("accounts-log", data);
+          setBadge("accounts-status", "回收站恢复完成", data.ok ? "ok" : "bad");
+          toast("已恢复：" + ((data.restored || 0) + (data.overwritten || 0)));
+          await loadRecycleBin({silent: true});
+          await refreshAccounts();
+        } catch (err) {
+          setBadge("accounts-status", "回收站恢复失败", "bad");
+          toast((err && err.message) || "恢复失败");
+          log("accounts-log", err && err.payload ? err.payload : {ok: false, error: (err && err.message) || "恢复失败"});
+        } finally {
+          recycleState.loading = false;
+          updateRecycleSelectionUi();
+        }
+      }
+
+      async function restoreRecycleAll() {
+        if (!recycleState.items.length) {
+          toast("回收站为空");
+          return;
+        }
+        var overwrite = !!(el("recycle-overwrite") && el("recycle-overwrite").checked);
+        if (!confirm("恢复回收站全部 " + recycleState.items.length + " 个账号？" + (overwrite ? "\n将覆盖已存在同邮箱账号。" : "\n已存在同邮箱账号会跳过。"))) return;
+        recycleState.loading = true;
+        updateRecycleSelectionUi();
+        setBadge("accounts-status", "回收站恢复中", "warn");
+        try {
+          var data = await api(__adminUrl("api", "accounts", "recycle", "restore"), {
+            method: "POST",
+            body: JSON.stringify({emails: null, restore_all: true, overwrite: overwrite})
+          });
+          log("accounts-log", data);
+          setBadge("accounts-status", "回收站恢复完成", data.ok ? "ok" : "bad");
+          toast("已恢复：" + ((data.restored || 0) + (data.overwritten || 0)));
+          await loadRecycleBin({silent: true});
+          await refreshAccounts();
+        } catch (err) {
+          setBadge("accounts-status", "回收站恢复失败", "bad");
+          toast((err && err.message) || "恢复失败");
+          log("accounts-log", err && err.payload ? err.payload : {ok: false, error: (err && err.message) || "恢复失败"});
+        } finally {
+          recycleState.loading = false;
+          updateRecycleSelectionUi();
+        }
+      }
+
+      async function purgeRecycleAll() {
+        if (!recycleState.items.length) {
+          toast("回收站为空");
+          return;
+        }
+        if (!confirm("确认永久清空回收站 " + recycleState.items.length + " 个账号？\n此操作不可恢复。")) return;
+        recycleState.loading = true;
+        updateRecycleSelectionUi();
+        setBadge("accounts-status", "清空回收站中", "warn");
+        try {
+          var data = await api(__adminUrl("api", "accounts", "recycle", "purge"), {
+            method: "POST",
+            body: JSON.stringify({purge_all: true})
+          });
+          log("accounts-log", data);
+          setBadge("accounts-status", "回收站已清空", data.ok ? "ok" : "bad");
+          toast("已清空：" + (data.purged || 0));
+          recycleState.selected = new Set();
+          await loadRecycleBin({silent: true});
+        } catch (err) {
+          setBadge("accounts-status", "清空回收站失败", "bad");
+          toast((err && err.message) || "清空失败");
+          log("accounts-log", err && err.payload ? err.payload : {ok: false, error: (err && err.message) || "清空失败"});
+        } finally {
+          recycleState.loading = false;
+          updateRecycleSelectionUi();
+        }
+      }
+
+      function bindRecycleDialog() {
+        bind("recycle-close", "click", closeRecycleDialog);
+        bind("recycle-refresh", "click", function () {
+          loadRecycleBin().catch(function (err) {
+            toast((err && err.message) || "刷新失败");
+          });
+        });
+        bind("recycle-restore-selected", "click", function () {
+          restoreRecycleSelected().catch(function (err) {
+            toast((err && err.message) || "恢复失败");
+          });
+        });
+        bind("recycle-restore-all", "click", function () {
+          restoreRecycleAll().catch(function (err) {
+            toast((err && err.message) || "恢复失败");
+          });
+        });
+        bind("recycle-purge-all", "click", function () {
+          purgeRecycleAll().catch(function (err) {
+            toast((err && err.message) || "清空失败");
+          });
+        });
+        bind("recycle-select-all", "change", function () {
+          var all = el("recycle-select-all");
+          var checked = !!(all && all.checked);
+          recycleState.selected = new Set();
+          if (checked) {
+            recycleState.items.forEach(function (item) {
+              var email = String(item.email || "").toLowerCase();
+              if (email) recycleState.selected.add(email);
+            });
+          }
+          renderRecycleTable();
+        });
+        var tbody = el("recycle-tbody");
+        if (tbody) {
+          tbody.addEventListener("change", function (ev) {
+            var target = ev.target;
+            if (!target || !target.classList || !target.classList.contains("recycle-item-check")) return;
+            var email = String(target.getAttribute("data-email") || "").toLowerCase();
+            if (!email) return;
+            if (target.checked) recycleState.selected.add(email);
+            else recycleState.selected.delete(email);
+            updateRecycleSelectionUi();
+          });
+        }
+        var mask = el("recycle-mask");
+        if (mask) {
+          mask.addEventListener("click", function (ev) {
+            if (ev.target === mask) closeRecycleDialog();
+          });
+        }
+        document.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape") {
+            var m = el("recycle-mask");
+            if (m && m.classList.contains("open")) closeRecycleDialog();
+          }
+        });
+      }
+
+      async function restoreAccountBackup() {
+
+        var defaultPath = "";
+
+        try {
+
+          var backups = await api(__adminUrl("api", "accounts", "backups"));
+
+          var list = Array.isArray(backups.backups) ? backups.backups : [];
+
+          if (list.length) defaultPath = list[0].path || list[0].name || "";
+
+        } catch (e) {}
+
+        var input = prompt(
+
+          "输入要恢复的账号删除备份文件路径或文件名。留空则使用最近一个备份。",
+
+          defaultPath
+
+        );
+
+        if (input === null) return;
+
+        var overwrite = false;
+
+        if (confirm("是否覆盖当前已存在的同邮箱账号？\n选择“取消”将只恢复本地不存在的账号。")) {
+
+          overwrite = true;
+
+        }
+
+        setBadge("accounts-status", "恢复备份中", "warn");
+
+        var data = await api(__adminUrl("api", "accounts", "restore-backup"), {
+
+          method: "POST",
+
+          body: JSON.stringify({backup_path: input.trim(), overwrite: overwrite})
+
+        });
+
+        log("accounts-log", data);
+
+        setBadge("accounts-status", "恢复完成", data.ok ? "ok" : "bad");
+
+        toast("已恢复：" + (data.restored || 0));
 
         await refreshAccounts();
 
@@ -11037,11 +11630,17 @@ async function exportSsoSelected() {
 
         };
 
-        if (regRateState.taskId !== regTask.id) resetRegRate(regTask.id);
+        if (regRateState.taskId !== regTask.id) resetRegRate(regTask.id, extractRegStartedAt(reg));
 
         setText("reg-task", "任务：" + regTask.id);
 
         setBadge("reg-status", "恢复中", "warn");
+
+        var restoredCounts = extractRegCounts(reg);
+
+        setRegCounts(restoredCounts.ok, restoredCounts.fail);
+
+        updateRegRate(regTask.id, restoredCounts.ok, false, extractRegStartedAt(reg));
 
         log("reg-log", {
 
@@ -11059,7 +11658,15 @@ async function exportSsoSelected() {
 
           success: reg.success,
 
-          failed: reg.failed
+          failed: reg.failed,
+
+          ok_count: reg.ok_count,
+
+          fail_count: reg.fail_count,
+
+          created_at: reg.created_at,
+
+          started_at: reg.started_at
 
         });
 
@@ -11299,7 +11906,15 @@ async function exportSsoSelected() {
 
                   success: picked.raw && (picked.raw.success || picked.raw.imported || picked.raw.ok),
 
-                  failed: picked.raw && (picked.raw.failed || picked.raw.error || picked.raw.fail)
+                  failed: picked.raw && (picked.raw.failed || picked.raw.error || picked.raw.fail),
+
+                  ok_count: picked.raw && picked.raw.ok_count,
+
+                  fail_count: picked.raw && picked.raw.fail_count,
+
+                  created_at: picked.raw && picked.raw.created_at,
+
+                  started_at: picked.raw && picked.raw.started_at
 
                 });
 
@@ -11533,6 +12148,7 @@ bind("upload-selected-cpa", "click", uploadSelectedCpa);
         bind("relogin-selected", "click", reloginSelected);
 
         bind("delete-selected", "click", deleteSelected);
+        bind("restore-backup", "click", restoreAccountBackup);
 bind("export-account-txt", "click", exportAccountTxt);
         bind("export-cpa-accounts", "click", exportCpaAccounts);
 
@@ -11557,6 +12173,7 @@ bind("export-account-txt", "click", exportAccountTxt);
         bindLogActions();
 
         bindOperationDialog();
+        bindRecycleDialog();
 
         el("proxy").addEventListener("input", updateProxyCount);
 
@@ -11682,4 +12299,3 @@ bind("export-account-txt", "click", exportAccountTxt);
 </body>
 
 </html>
-

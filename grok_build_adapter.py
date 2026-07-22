@@ -3201,6 +3201,39 @@ def _make_email_receiver(
 
 
 
+            def cleanup_failure(self, reason: str = "failure") -> None:
+
+                try:
+
+                    mailbox, _s, _r, mode = om.outmail_decode_token(
+
+                        self.token, fallback_email=self.email
+
+                    )
+
+                    if (
+                        str(mode or "pool").strip().lower() == "pool"
+                        and om.outmail_plus_alias_enabled()
+                    ):
+
+                        om.outmail_mark_mailbox_excluded(
+
+                            mailbox or self.email,
+
+                            register_email=self.email,
+
+                            reason=reason or "failure",
+
+                        )
+
+                    om.outmail_cleanup_mailbox(mailbox or self.email, mode=mode)
+
+                except Exception as exc:  # noqa: BLE001
+
+                    print(f"[outmail] failure cleanup skipped: {exc}", flush=True)
+
+
+
         return email_addr, _OutmailReceiver(email_addr, dev_token)
 
 
@@ -3231,7 +3264,16 @@ def _make_email_receiver(
 
     # a custom prefix field; ignore leftover config values for new mailboxes.
 
-    pre = secrets.token_hex(5).lower()
+    try:
+        from moemail import random_mailbox_local as _rand_local
+        pre = _rand_local()
+    except Exception:
+        # fallback: variable length mixed local-part
+        import string as _string
+        _n = secrets.randbelow(7) + 7  # 7..13
+        _letters = _string.ascii_lowercase
+        _alnum = _letters + _string.digits
+        pre = secrets.choice(_letters) + "".join(secrets.choice(_alnum) for _ in range(_n - 1))
 
 
 
@@ -6140,6 +6182,22 @@ def _run_registration(
 
 
 
+    def cleanup_outmail_failure(reason: str) -> None:
+
+        try:
+
+            recv = sess.get("_receiver") or receiver
+
+            if recv is not None and callable(getattr(recv, "cleanup_failure", None)):
+
+                recv.cleanup_failure(reason=reason)
+
+        except Exception as _om_exc:  # noqa: BLE001
+
+            print(f"[outmail] post-failure cleanup skipped: {_om_exc}", flush=True)
+
+
+
     def _check_cancel() -> None:
 
         _refresh_cancel_from_redis()
@@ -8108,6 +8166,8 @@ def _run_registration(
 
             # Count as hard failure so batch ok/fail reflects probe gate only.
 
+            cleanup_outmail_failure("probe_failed")
+
             status = "failed"
 
             message = (
@@ -8179,6 +8239,8 @@ def _run_registration(
         return
 
     except Exception as exc:  # noqa: BLE001
+
+        cleanup_outmail_failure("registration_failed")
 
         try:
 
@@ -10142,4 +10204,3 @@ def main() -> int:
 if __name__ == "__main__":
 
     raise SystemExit(main())
-

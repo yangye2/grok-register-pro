@@ -870,6 +870,29 @@ class DeleteAccountsBody(BaseModel):
     emails: list[str]
 
 
+class RestoreAccountsBackupBody(BaseModel):
+
+    backup_path: str | None = None
+
+    overwrite: bool = False
+
+
+class RestoreRecycleBody(BaseModel):
+
+    emails: list[str] | None = None
+
+    restore_all: bool = False
+
+    overwrite: bool = False
+
+
+class PurgeRecycleBody(BaseModel):
+
+    emails: list[str] | None = None
+
+    purge_all: bool = False
+
+
 
 
 
@@ -5510,6 +5533,16 @@ async def runtime_active_tasks():
 
                 "failed": obj.get("failed") or obj.get("error") or obj.get("fail"),
 
+                "ok_count": obj.get("ok_count"),
+
+                "fail_count": obj.get("fail_count"),
+
+                "created_at": obj.get("created_at"),
+
+                "updated_at": obj.get("updated_at"),
+
+                "started_at": obj.get("started_at") or obj.get("created_at"),
+
                 "message": obj.get("message") or "",
 
             }
@@ -5583,6 +5616,89 @@ async def delete_accounts(body: DeleteAccountsBody):
     return await asyncio.to_thread(pro_store.delete_accounts, body.emails)
 
 
+@app.get(_admin_path('api', 'accounts', 'backups'))
+
+async def list_account_backups(limit: int = 20):
+
+    return await asyncio.to_thread(pro_store.list_account_delete_backups, limit)
+
+
+@app.post(_admin_path('api', 'accounts', 'restore-backup'))
+
+async def restore_account_backup(body: RestoreAccountsBackupBody):
+
+    try:
+
+        return await asyncio.to_thread(
+
+            pro_store.restore_accounts_from_backup,
+
+            body.backup_path,
+
+            overwrite=body.overwrite,
+
+        )
+
+    except Exception as exc:  # noqa: BLE001
+
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+
+
+
+
+@app.get(_admin_path('api', 'accounts', 'recycle'))
+
+async def list_account_recycle(limit: int = 100):
+
+    return await asyncio.to_thread(pro_store.list_account_recycle_bin, limit)
+
+
+
+@app.post(_admin_path('api', 'accounts', 'recycle', 'restore'))
+
+async def restore_account_recycle(body: RestoreRecycleBody):
+
+    try:
+
+        return await asyncio.to_thread(
+
+            pro_store.restore_accounts_from_recycle,
+
+            body.emails,
+
+            restore_all=body.restore_all,
+
+            overwrite=body.overwrite,
+
+        )
+
+    except Exception as exc:  # noqa: BLE001
+
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+
+@app.post(_admin_path('api', 'accounts', 'recycle', 'purge'))
+
+async def purge_account_recycle(body: PurgeRecycleBody):
+
+    try:
+
+        return await asyncio.to_thread(
+
+            pro_store.purge_accounts_from_recycle,
+
+            body.emails,
+
+            purge_all=body.purge_all,
+
+        )
+
+    except Exception as exc:  # noqa: BLE001
+
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 
@@ -7256,4 +7372,3 @@ if __name__ == "__main__":
     print(f"[register-pro] singleton lock ok pid={os.getpid()} data={os.getenv('GROK_REGISTER_PRO_DATA_DIR') or ''}")
 
     uvicorn.run("register_pro_app:app", host=host, port=port, reload=False)
-

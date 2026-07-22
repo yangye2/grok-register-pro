@@ -667,16 +667,38 @@ def outmail_generate_temp_email(
     domain_val = str(domain or "").strip()
     prefix_val = str(username_prefix or "").strip()
     if prefix_val:
+        # If operator set a fixed prefix, still append a random variable tail so
+        # consecutive creates are not identical names.
         generated_name = prefix_val
+        if re.fullmatch(r"[a-zA-Z0-9._+-]+", prefix_val) and len(prefix_val) < 20:
+            tail_n = random.randint(3, 6)
+            alphabet = string.ascii_lowercase + string.digits
+            generated_name = prefix_val + "".join(secrets.choice(alphabet) for _ in range(tail_n))
     else:
-        # avoid always tmp+hex
-        _anon_styles = [
-            lambda: "u" + secrets.token_hex(random.randint(3, 5)),
-            lambda: "m" + secrets.token_hex(4),
-            lambda: "".join(secrets.choice(string.ascii_lowercase) for _ in range(random.randint(6, 10))),
-            lambda: random.choice(["neo", "sam", "kai", "lee", "rio", "sky"]) + secrets.token_hex(3),
-        ]
-        generated_name = random.choice(_anon_styles)()
+        # Prefer shared generator when available; else local multi-style fallback.
+        try:
+            from moemail import random_mailbox_local as _rand_local
+            generated_name = _rand_local(7, 14)
+        except Exception:
+            words = ["neo", "sam", "kai", "lee", "rio", "sky", "nova", "luna", "axel", "mira"]
+            letters = string.ascii_lowercase
+            alnum = letters + string.digits
+            n = random.randint(7, 13)
+            style = random.randint(0, 4)
+            if style == 0:
+                base = random.choice(words)
+                generated_name = base + "".join(secrets.choice(alnum) for _ in range(max(2, n - len(base))))
+            elif style == 1:
+                generated_name = secrets.choice(letters) + "".join(secrets.choice(alnum) for _ in range(n - 1))
+            elif style == 2:
+                left = "".join(secrets.choice(letters) for _ in range(random.randint(2, 4)))
+                right = "".join(secrets.choice(alnum) for _ in range(max(2, n - len(left) - 1)))
+                generated_name = f"{left}.{right}"
+            elif style == 3:
+                base = random.choice(words)
+                generated_name = f"{base}_{''.join(secrets.choice(alnum) for _ in range(max(2, n - len(base) - 1)))}"
+            else:
+                generated_name = "".join(secrets.choice(letters) for _ in range(n))
 
     candidate_payloads = []
     dedup_keys = set()
@@ -1258,13 +1280,17 @@ def outmail_alias_suffix_len() -> int:
     return max(2, min(32, n))
 
 
+def outmail_plus_alias_enabled() -> bool:
+    return bool(_cfg().get("outmail_plus_alias", True))
+
+
 def outmail_plus_alias_count() -> int:
     """Max successful registrations per main mailbox when plus-alias is on.
 
     Each success consumes one quota; mailbox is skipped after reaching this count.
     When plus-alias is off, effective limit is always 1.
     """
-    if not bool(_cfg().get("outmail_plus_alias", True)):
+    if not outmail_plus_alias_enabled():
         return 1
     try:
         n = int(_cfg().get("outmail_plus_alias_count", 1) or 1)
@@ -1515,6 +1541,69 @@ def outmail_mark_mailbox_used(mailbox, register_email="", reason="success", log_
             msg += f" (alias={reg})"
         if new_n >= limit:
             msg += " (quota reached)"
+        log_callback(msg)
+    return True
+
+
+def outmail_mark_mailbox_excluded(mailbox, register_email="", reason="failure", log_callback=None):
+    """Force a pool mailbox to its alias quota after a registration failure."""
+    global _outmail_used_cache
+    mb = str(mailbox or "").strip().lower()
+    if not mb or "@" not in mb:
+        return False
+    reg = str(register_email or "").strip()
+    path = outmail_used_file_path()
+    lock_path = outmail_used_lock_path()
+    limit = outmail_plus_alias_count()
+    final_n = 0
+
+    def _parse_file() -> dict[str, int]:
+        out: dict[str, int] = {}
+        if not os.path.exists(path):
+            return out
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = str(line or "").strip()
+                if not line or line.startswith("#"):
+                    continue
+                email = line.split("\t", 1)[0].split(",", 1)[0].strip().lower()
+                if "@" in email:
+                    out[email] = int(out.get(email, 0)) + 1
+        return out
+
+    with _outmail_used_lock:
+        try:
+            with _file_lock_exclusive(lock_path):
+                counts = _parse_file()
+                prev = int(counts.get(mb, 0) or 0)
+                if prev >= limit:
+                    final_n = prev
+                    _outmail_used_cache = counts
+                else:
+                    parent = os.path.dirname(path)
+                    if parent:
+                        os.makedirs(parent, exist_ok=True)
+                    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    safe_reason = str(reason or "failure").strip() or "failure"
+                    extra = ("\t" + reg) if reg else ""
+                    with open(path, "a", encoding="utf-8") as f:
+                        for n in range(prev + 1, limit + 1):
+                            f.write(f"{mb}\t{ts}\t{safe_reason}\tuse={n}/{limit}{extra}\n")
+                    counts[mb] = limit
+                    final_n = limit
+                    _outmail_used_cache = counts
+        except Exception as exc:
+            if log_callback:
+                log_callback(f"[Debug] mark excluded failed: {exc}")
+            try:
+                _outmail_used_cache = _parse_file()
+            except Exception:
+                pass
+            return False
+    if log_callback:
+        msg = f"[Debug] Outmail excluded mailbox={mb} use={final_n}/{limit}"
+        if reg:
+            msg += f" (alias={reg})"
         log_callback(msg)
     return True
 
@@ -1998,5 +2087,3 @@ def outmail_get_oai_code(
     finally:
         # 账号池释放占用；匿名模式按配置删除临时期箱
         outmail_cleanup_mailbox(mailbox, mode=mode, log_callback=log_callback)
-
-

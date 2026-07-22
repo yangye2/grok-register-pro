@@ -3103,6 +3103,30 @@ def init_db() -> None:
 
             """
 
+            CREATE TABLE IF NOT EXISTS account_recycle_bin (
+
+              email TEXT PRIMARY KEY,
+
+              account_json TEXT NOT NULL,
+
+              deleted_at REAL NOT NULL,
+
+              backup_path TEXT NOT NULL DEFAULT '',
+
+              source TEXT NOT NULL DEFAULT 'delete',
+
+              restore_count INTEGER NOT NULL DEFAULT 0
+
+            )
+
+            """
+
+        )
+
+        conn.execute(
+
+            """
+
             CREATE TABLE IF NOT EXISTS unassigned_sso (
 
               token_hash TEXT PRIMARY KEY,
@@ -3132,6 +3156,8 @@ def init_db() -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_remote_accounts_email_seen ON remote_accounts(email, seen_at)")
 
         conn.execute("CREATE INDEX IF NOT EXISTS idx_accounts_email_lower ON accounts(email)")
+
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_account_recycle_deleted ON account_recycle_bin(deleted_at)")
 
 
 
@@ -7043,6 +7069,83 @@ def classify_cpa_inspection_result(row: dict[str, Any]) -> dict[str, Any]:
 
 
 
+def _is_remote_problem_classified(row: dict[str, Any]) -> bool:
+    action = str(row.get("action") or "").strip().lower()
+    classification = str(row.get("classification") or "").strip().lower()
+    try:
+        http_status = int(row.get("http_status") or 0)
+    except Exception:
+        http_status = 0
+    if action in {"keep", "ok", "active"} or classification == "healthy" or http_status == 200:
+        return False
+    return bool(action or classification or http_status)
+
+
+def _create_cpa_remote_placeholder_accounts(rows: list[dict[str, Any]], *, source: str) -> int:
+    """Create local placeholder rows for CPA remote problem accounts missing locally."""
+    init_db()
+    now = time.time()
+    created = 0
+    seen: set[str] = set()
+    with _connect() as conn:
+        for row in rows:
+            if not isinstance(row, dict) or not _is_remote_problem_classified(row):
+                continue
+            email = str(row.get("email") or row.get("name") or "").strip().lower()
+            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+                continue
+            if email in seen:
+                continue
+            seen.add(email)
+            exists = conn.execute(
+                "SELECT 1 FROM accounts WHERE lower(email) = ? LIMIT 1",
+                (email,),
+            ).fetchone()
+            if exists:
+                continue
+            payload = json.dumps(
+                {
+                    "source": source,
+                    "email": email,
+                    "provider": "cpa",
+                    "remote_id": row.get("remote_id"),
+                    "file_name": row.get("file_name") or row.get("file_id") or row.get("auth_index"),
+                    "classification": row.get("classification"),
+                    "action": row.get("action"),
+                    "http_status": row.get("http_status"),
+                    "reason": row.get("reason") or row.get("status_message") or row.get("message"),
+                    "placeholder": True,
+                    "has_password": False,
+                    "has_sso": False,
+                    "has_auth": False,
+                },
+                ensure_ascii=False,
+            )
+            conn.execute(
+                """
+                INSERT INTO accounts(
+                  email, password, sso, auth_key, user_id, access_token, refresh_token, id_token,
+                  expires_at, oidc_issuer, oidc_client_id, grok2api_auth_path, cpa_auth_path,
+                  grok2api_auth_json, cpa_auth_json, status, batch_id, session_id,
+                  created_at, updated_at, raw_json, cpa_pushed, cpa_pushed_at
+                )
+                VALUES (?, '', '', ?, '', '', '', '', '', '', '', '', '', '', '',
+                        'remote_only', '', '', ?, ?, ?, 1, ?)
+                """,
+                (
+                    email,
+                    f"remote::cpa::{email}",
+                    now,
+                    now,
+                    payload,
+                    now,
+                ),
+            )
+            created += 1
+    return created
+
+
+
 
 
 def sync_grok2api_remote_status(
@@ -9641,6 +9744,14 @@ def sync_cpa_remote_status(
 
 
 
+    generated_local_accounts = _create_cpa_remote_placeholder_accounts(
+
+        classified_rows, source=f"cpa_remote_status:{mode_norm}"
+
+    )
+
+
+
     with _connect() as conn:
 
         local_total = int(conn.execute("SELECT COUNT(*) AS n FROM accounts").fetchone()["n"])
@@ -9734,6 +9845,8 @@ def sync_cpa_remote_status(
         "matched_local": matched,
 
         "remote_only_failures": remote_only_failures,
+
+        "generated_local_accounts": generated_local_accounts,
 
         "seen_at": seen_at,
 
@@ -13425,7 +13538,7 @@ def probe_accounts(
 
 
 
-def delete_accounts(emails: list[str], *, backup: bool = True) -> dict[str, Any]:
+def delete_accounts(emails: list[str], *, backup: bool = True, recycle: bool = True) -> dict[str, Any]:
 
     clean: list[str] = []
 
@@ -13454,6 +13567,8 @@ def delete_accounts(emails: list[str], *, backup: bool = True) -> dict[str, Any]
     placeholders = ",".join("?" for _ in clean)
 
     now = int(time.time())
+
+    deleted_at = time.time()
 
     backup_path = ""
 
@@ -13495,6 +13610,26 @@ def delete_accounts(emails: list[str], *, backup: bool = True) -> dict[str, Any]
 
             backup_path = str(path)
 
+        recycled = 0
+        if recycle and backup_rows:
+            for row in backup_rows:
+                email = str(row.get("email") or "").strip().lower()
+                if not email:
+                    continue
+                conn.execute(
+                    """
+                    INSERT INTO account_recycle_bin(email, account_json, deleted_at, backup_path, source, restore_count)
+                    VALUES (?, ?, ?, ?, 'delete', 0)
+                    ON CONFLICT(email) DO UPDATE SET
+                      account_json = excluded.account_json,
+                      deleted_at = excluded.deleted_at,
+                      backup_path = excluded.backup_path,
+                      source = excluded.source
+                    """,
+                    (email, json.dumps(row, ensure_ascii=False), deleted_at, backup_path),
+                )
+                recycled += 1
+
         conn.execute(
 
             f"DELETE FROM accounts WHERE lower(email) IN ({placeholders})",
@@ -13513,6 +13648,10 @@ def delete_accounts(emails: list[str], *, backup: bool = True) -> dict[str, Any]
 
         "backup_path": backup_path,
 
+        "recycled": recycled if recycle else 0,
+
+        "soft_deleted": bool(recycle),
+
     }
 
 
@@ -13523,10 +13662,292 @@ def discard_accounts(emails: list[str]) -> dict[str, Any]:
 
     """Hard-drop registration leftovers (probe fail) without writing backup files."""
 
-    return delete_accounts(emails, backup=False)
+    return delete_accounts(emails, backup=False, recycle=False)
 
 
 
+
+
+def list_account_delete_backups(limit: int = 20) -> dict[str, Any]:
+    init_db()
+    cap = max(1, min(200, int(limit or 20)))
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    items: list[dict[str, Any]] = []
+    paths = sorted(BACKUP_DIR.glob("accounts_delete_*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for path in paths[:cap]:
+        meta: dict[str, Any] = {}
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                meta = data
+        except Exception:
+            meta = {}
+        stat = path.stat()
+        items.append(
+            {
+                "name": path.name,
+                "path": str(path),
+                "count": int(meta.get("count") or 0),
+                "deleted_at": meta.get("deleted_at"),
+                "size": stat.st_size,
+                "mtime": stat.st_mtime,
+            }
+        )
+    return {"ok": True, "backups": items, "count": len(items), "backup_dir": str(BACKUP_DIR)}
+
+
+def _resolve_account_backup_path(backup_path: str | None) -> Path:
+    raw = str(backup_path or "").strip().strip("\"'")
+    if not raw:
+        backups = list_account_delete_backups(limit=1).get("backups") or []
+        if not backups:
+            raise FileNotFoundError("未找到账号删除备份文件")
+        raw = str(backups[0].get("path") or "")
+    path = Path(raw)
+    if not path.is_absolute():
+        path = BACKUP_DIR / path.name
+    resolved = path.resolve()
+    backup_root = BACKUP_DIR.resolve()
+    try:
+        resolved.relative_to(backup_root)
+    except ValueError as exc:
+        raise ValueError("只能恢复备份目录内的账号删除备份文件") from exc
+    if not resolved.exists() or not resolved.is_file():
+        raise FileNotFoundError(f"备份文件不存在：{resolved}")
+    if resolved.suffix.lower() != ".json" or not resolved.name.startswith("accounts_delete_"):
+        raise ValueError("备份文件名必须是 accounts_delete_*.json")
+    return resolved
+
+
+def restore_accounts_from_backup(backup_path: str | None = None, *, overwrite: bool = False) -> dict[str, Any]:
+    init_db()
+    path = _resolve_account_backup_path(backup_path)
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ValueError(f"备份文件 JSON 解析失败：{exc}") from exc
+    rows = payload.get("accounts") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        raise ValueError("备份文件格式无效：缺少 accounts 数组")
+
+    now = time.time()
+    restored = 0
+    skipped_existing = 0
+    skipped_invalid = 0
+    overwritten = 0
+    with _connect() as conn:
+        columns = [str(row["name"]) for row in conn.execute("PRAGMA table_info(accounts)").fetchall()]
+        insert_cols = list(columns)
+        placeholders = ",".join("?" for _ in insert_cols)
+        col_sql = ",".join(insert_cols)
+        if overwrite:
+            update_cols = [c for c in insert_cols if c != "email"]
+            conflict_sql = "DO UPDATE SET " + ", ".join(f"{c}=excluded.{c}" for c in update_cols)
+        else:
+            conflict_sql = "DO NOTHING"
+        sql = f"INSERT INTO accounts({col_sql}) VALUES ({placeholders}) ON CONFLICT(email) {conflict_sql}"
+
+        for raw in rows:
+            if not isinstance(raw, dict):
+                skipped_invalid += 1
+                continue
+            email = str(raw.get("email") or "").strip().lower()
+            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+                skipped_invalid += 1
+                continue
+            exists = conn.execute("SELECT 1 FROM accounts WHERE lower(email)=? LIMIT 1", (email,)).fetchone()
+            if exists and not overwrite:
+                skipped_existing += 1
+                continue
+            record = {key: raw.get(key) for key in insert_cols}
+            record["email"] = email
+            record["auth_key"] = str(record.get("auth_key") or f"restore::{email}")
+            record["status"] = str(record.get("status") or "registered")
+            record["created_at"] = float(record.get("created_at") or now)
+            record["updated_at"] = now
+            if record.get("raw_json") is None:
+                record["raw_json"] = json.dumps(
+                    {"source": "restore_backup", "backup": path.name, "email": email},
+                    ensure_ascii=False,
+                )
+            for key in insert_cols:
+                if record.get(key) is None:
+                    record[key] = 0 if key in {"created_at", "updated_at", "cpa_pushed", "sub2_pushed", "grok2api_pushed"} else ""
+            conn.execute(sql, [record.get(c) for c in insert_cols])
+            if exists:
+                overwritten += 1
+            else:
+                restored += 1
+    return {
+        "ok": True,
+        "backup_path": str(path),
+        "restored": restored,
+        "overwritten": overwritten,
+        "skipped_existing": skipped_existing,
+        "skipped_invalid": skipped_invalid,
+        "total": len(rows),
+        "overwrite": bool(overwrite),
+    }
+
+
+def list_account_recycle_bin(limit: int = 100) -> dict[str, Any]:
+    init_db()
+    cap = max(1, min(1000, int(limit or 100)))
+    with _connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT email, account_json, deleted_at, backup_path, source, restore_count
+            FROM account_recycle_bin
+            ORDER BY deleted_at DESC
+            LIMIT ?
+            """,
+            (cap,),
+        ).fetchall()
+    items: list[dict[str, Any]] = []
+    for row in rows:
+        raw: dict[str, Any] = {}
+        try:
+            parsed = json.loads(str(row["account_json"] or "{}"))
+            if isinstance(parsed, dict):
+                raw = parsed
+        except Exception:
+            raw = {}
+        items.append(
+            {
+                "email": str(row["email"] or ""),
+                "status": str(raw.get("status") or ""),
+                "auth_key": str(raw.get("auth_key") or ""),
+                "deleted_at": row["deleted_at"],
+                "backup_path": str(row["backup_path"] or ""),
+                "source": str(row["source"] or ""),
+                "restore_count": int(row["restore_count"] or 0),
+                "has_password": bool(str(raw.get("password") or "")),
+                "has_sso": bool(str(raw.get("sso") or "")),
+                "has_cpa": bool(str(raw.get("cpa_auth_json") or raw.get("cpa_auth_path") or "")),
+                "has_grok2api": bool(str(raw.get("grok2api_auth_json") or raw.get("grok2api_auth_path") or "")),
+            }
+        )
+    return {"ok": True, "items": items, "count": len(items), "limit": cap}
+
+
+def restore_accounts_from_recycle(
+    emails: list[str] | None = None,
+    *,
+    restore_all: bool = False,
+    overwrite: bool = False,
+) -> dict[str, Any]:
+    init_db()
+    clean = sorted({str(email or "").strip().lower() for email in (emails or []) if str(email or "").strip()})
+    if not clean and not restore_all:
+        return {"ok": False, "restored": 0, "error": "未选择回收站账号"}
+
+    now = time.time()
+    restored = 0
+    overwritten = 0
+    skipped_existing = 0
+    skipped_invalid = 0
+    requested = 0
+    restored_emails: list[str] = []
+    with _connect() as conn:
+        if restore_all:
+            recycle_rows = conn.execute(
+                "SELECT email, account_json FROM account_recycle_bin ORDER BY deleted_at DESC"
+            ).fetchall()
+        else:
+            placeholders = ",".join("?" for _ in clean)
+            recycle_rows = conn.execute(
+                f"SELECT email, account_json FROM account_recycle_bin WHERE lower(email) IN ({placeholders})",
+                clean,
+            ).fetchall()
+        requested = len(recycle_rows)
+        columns = [str(row["name"]) for row in conn.execute("PRAGMA table_info(accounts)").fetchall()]
+        insert_cols = list(columns)
+        placeholders = ",".join("?" for _ in insert_cols)
+        col_sql = ",".join(insert_cols)
+        if overwrite:
+            update_cols = [c for c in insert_cols if c != "email"]
+            conflict_sql = "DO UPDATE SET " + ", ".join(f"{c}=excluded.{c}" for c in update_cols)
+        else:
+            conflict_sql = "DO NOTHING"
+        sql = f"INSERT INTO accounts({col_sql}) VALUES ({placeholders}) ON CONFLICT(email) {conflict_sql}"
+
+        for row in recycle_rows:
+            try:
+                raw = json.loads(str(row["account_json"] or "{}"))
+            except Exception:
+                raw = {}
+            if not isinstance(raw, dict):
+                skipped_invalid += 1
+                continue
+            email = str(raw.get("email") or row["email"] or "").strip().lower()
+            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+                skipped_invalid += 1
+                continue
+            exists = conn.execute("SELECT 1 FROM accounts WHERE lower(email)=? LIMIT 1", (email,)).fetchone()
+            if exists and not overwrite:
+                skipped_existing += 1
+                continue
+            record = {key: raw.get(key) for key in insert_cols}
+            record["email"] = email
+            record["auth_key"] = str(record.get("auth_key") or f"restore::{email}")
+            record["status"] = str(record.get("status") or "registered")
+            record["created_at"] = float(record.get("created_at") or now)
+            record["updated_at"] = now
+            if record.get("raw_json") is None:
+                record["raw_json"] = json.dumps(
+                    {"source": "restore_recycle", "email": email},
+                    ensure_ascii=False,
+                )
+            for key in insert_cols:
+                if record.get(key) is None:
+                    record[key] = 0 if key in {"created_at", "updated_at", "cpa_pushed", "sub2_pushed", "grok2api_pushed"} else ""
+            conn.execute(sql, [record.get(c) for c in insert_cols])
+            conn.execute("DELETE FROM account_recycle_bin WHERE lower(email)=?", (email,))
+            restored_emails.append(email)
+            if exists:
+                overwritten += 1
+            else:
+                restored += 1
+    return {
+        "ok": True,
+        "restored": restored,
+        "overwritten": overwritten,
+        "skipped_existing": skipped_existing,
+        "skipped_invalid": skipped_invalid,
+        "requested": requested,
+        "emails": restored_emails,
+        "overwrite": bool(overwrite),
+        "restore_all": bool(restore_all),
+    }
+
+
+
+def purge_accounts_from_recycle(
+    emails: list[str] | None = None,
+    *,
+    purge_all: bool = False,
+) -> dict[str, Any]:
+    """Permanently remove soft-deleted accounts from recycle bin."""
+    init_db()
+    clean = sorted({str(email or "").strip().lower() for email in (emails or []) if str(email or "").strip()})
+    if not clean and not purge_all:
+        return {"ok": False, "purged": 0, "error": "未选择回收站账号"}
+    with _connect() as conn:
+        if purge_all:
+            cur = conn.execute("DELETE FROM account_recycle_bin")
+        else:
+            placeholders = ",".join("?" for _ in clean)
+            cur = conn.execute(
+                f"DELETE FROM account_recycle_bin WHERE lower(email) IN ({placeholders})",
+                clean,
+            )
+        purged = int(cur.rowcount or 0)
+    return {
+        "ok": True,
+        "purged": purged,
+        "requested": 0 if purge_all else len(clean),
+        "purge_all": bool(purge_all),
+    }
 
 
 def _save_probe_result(email: str, result: dict[str, Any]) -> None:
@@ -13940,4 +14361,3 @@ def status() -> dict[str, Any]:
         **stats,
 
     }
-
