@@ -3185,7 +3185,48 @@
         <div class="recycle-actions">
           <button id="recycle-restore-selected" class="btn primary" type="button">恢复选中</button>
           <button id="recycle-restore-all" class="btn" type="button">恢复全部</button>
+          <button id="recycle-purge-selected" class="btn danger" type="button">永久删除选中</button>
           <button id="recycle-purge-all" class="btn danger" type="button">清空回收站</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+
+  <div id="backup-mask" class="recycle-mask" aria-hidden="true">
+    <section class="recycle-dialog" role="dialog" aria-modal="true" aria-labelledby="backup-title">
+      <div class="recycle-head">
+        <div>
+          <p id="backup-title" class="recycle-title">恢复备份</p>
+          <div id="backup-meta" class="recycle-meta">选择删除前自动生成的账号备份</div>
+        </div>
+        <div class="recycle-actions">
+          <button id="backup-refresh" class="btn ghost" type="button">刷新</button>
+          <button id="backup-close" class="btn ghost" type="button">关闭</button>
+        </div>
+      </div>
+      <div class="recycle-body">
+        <table class="recycle-table" aria-label="账号删除备份">
+          <thead>
+            <tr>
+              <th style="width:36px"></th>
+              <th>文件名</th>
+              <th>数量</th>
+              <th>删除时间</th>
+              <th>大小</th>
+            </tr>
+          </thead>
+          <tbody id="backup-tbody"></tbody>
+        </table>
+        <div id="backup-empty" class="recycle-empty is-hidden">暂无删除备份</div>
+      </div>
+      <div class="recycle-foot">
+        <label class="recycle-check" for="backup-overwrite">
+          <input id="backup-overwrite" type="checkbox" />
+          覆盖已存在同邮箱账号
+        </label>
+        <div class="recycle-actions">
+          <button id="backup-restore" class="btn primary" type="button">恢复选中备份</button>
         </div>
       </div>
     </section>
@@ -5663,6 +5704,7 @@
         if (data.matched_local != null) lines.push(line("本地匹配：" + data.matched_local));
 
         if (data.generated_local_accounts != null) lines.push(line("已生成本地占位账号：" + data.generated_local_accounts, data.generated_local_accounts ? "ok" : ""));
+        if (data.restored_from_recycle != null) lines.push(line("已从回收站自动恢复：" + data.restored_from_recycle, data.restored_from_recycle ? "ok" : ""));
 
         if (data.remote_only_failures != null) lines.push(line("远端异常但本地仍缺账号：" + data.remote_only_failures, data.remote_only_failures ? "warn" : "ok"));
 
@@ -10517,6 +10559,8 @@
         if (restoreAll) restoreAll.disabled = total === 0 || recycleState.loading;
         var purgeAll = el("recycle-purge-all");
         if (purgeAll) purgeAll.disabled = total === 0 || recycleState.loading;
+        var purgeSelected = el("recycle-purge-selected");
+        if (purgeSelected) purgeSelected.disabled = selected === 0 || recycleState.loading;
       }
 
       function renderRecycleTable() {
@@ -10646,6 +10690,37 @@
         }
       }
 
+
+      async function purgeRecycleSelected() {
+        var emails = Array.from(recycleState.selected || []);
+        if (!emails.length) {
+          toast("先选择回收站账号");
+          return;
+        }
+        if (!confirm("确认永久删除选中的 " + emails.length + " 个回收站账号？\n此操作不可恢复。")) return;
+        recycleState.loading = true;
+        updateRecycleSelectionUi();
+        setBadge("accounts-status", "永久删除中", "warn");
+        try {
+          var data = await api(__adminUrl("api", "accounts", "recycle", "purge"), {
+            method: "POST",
+            body: JSON.stringify({emails: emails, purge_all: false})
+          });
+          log("accounts-log", data);
+          setBadge("accounts-status", "永久删除完成", data.ok ? "ok" : "bad");
+          toast("已永久删除：" + (data.purged || 0));
+          emails.forEach(function (e) { recycleState.selected.delete(String(e || "").toLowerCase()); });
+          await loadRecycleBin({silent: true});
+        } catch (err) {
+          setBadge("accounts-status", "永久删除失败", "bad");
+          toast((err && err.message) || "删除失败");
+          log("accounts-log", err && err.payload ? err.payload : {ok: false, error: (err && err.message) || "删除失败"});
+        } finally {
+          recycleState.loading = false;
+          updateRecycleSelectionUi();
+        }
+      }
+
       async function purgeRecycleAll() {
         if (!recycleState.items.length) {
           toast("回收站为空");
@@ -10692,6 +10767,11 @@
             toast((err && err.message) || "恢复失败");
           });
         });
+        bind("recycle-purge-selected", "click", function () {
+          purgeRecycleSelected().catch(function (err) {
+            toast((err && err.message) || "删除失败");
+          });
+        });
         bind("recycle-purge-all", "click", function () {
           purgeRecycleAll().catch(function (err) {
             toast((err && err.message) || "清空失败");
@@ -10735,56 +10815,180 @@
         });
       }
 
-      async function restoreAccountBackup() {
+      var backupState = {
+        items: [],
+        selected: "",
+        loading: false
+      };
 
-        var defaultPath = "";
+      function openBackupDialog() {
+        var mask = el("backup-mask");
+        if (!mask) return;
+        mask.classList.add("open");
+        mask.setAttribute("aria-hidden", "false");
+      }
 
-        try {
+      function closeBackupDialog() {
+        var mask = el("backup-mask");
+        if (!mask) return;
+        mask.classList.remove("open");
+        mask.setAttribute("aria-hidden", "true");
+      }
 
-          var backups = await api(__adminUrl("api", "accounts", "backups"));
+      function formatBackupSize(n) {
+        var size = Number(n || 0);
+        if (!size) return "-";
+        if (size < 1024) return size + " B";
+        if (size < 1024 * 1024) return (size / 1024).toFixed(1) + " KB";
+        return (size / (1024 * 1024)).toFixed(2) + " MB";
+      }
 
-          var list = Array.isArray(backups.backups) ? backups.backups : [];
+      function updateBackupSelectionUi() {
+        var total = backupState.items.length;
+        var selected = backupState.selected ? 1 : 0;
+        setText("backup-meta", total ? ("共 " + total + " 个备份，已选 " + selected + " 个") : "暂无删除备份");
+        var restoreBtn = el("backup-restore");
+        if (restoreBtn) restoreBtn.disabled = !backupState.selected || backupState.loading;
+      }
 
-          if (list.length) defaultPath = list[0].path || list[0].name || "";
-
-        } catch (e) {}
-
-        var input = prompt(
-
-          "输入要恢复的账号删除备份文件路径或文件名。留空则使用最近一个备份。",
-
-          defaultPath
-
-        );
-
-        if (input === null) return;
-
-        var overwrite = false;
-
-        if (confirm("是否覆盖当前已存在的同邮箱账号？\n选择“取消”将只恢复本地不存在的账号。")) {
-
-          overwrite = true;
-
+      function renderBackupTable() {
+        var tbody = el("backup-tbody");
+        var empty = el("backup-empty");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+        var items = backupState.items || [];
+        if (!items.length) {
+          if (empty) {
+            empty.classList.remove("is-hidden");
+            empty.textContent = "暂无删除备份";
+          }
+          updateBackupSelectionUi();
+          return;
         }
-
-        setBadge("accounts-status", "恢复备份中", "warn");
-
-        var data = await api(__adminUrl("api", "accounts", "restore-backup"), {
-
-          method: "POST",
-
-          body: JSON.stringify({backup_path: input.trim(), overwrite: overwrite})
-
+        if (empty) empty.classList.add("is-hidden");
+        items.forEach(function (item) {
+          var path = String(item.path || item.name || "");
+          var name = String(item.name || path || "-");
+          var checked = backupState.selected === path ? " checked" : "";
+          var tr = document.createElement("tr");
+          tr.innerHTML =
+            '<td><input type="radio" name="backup-item" class="backup-item-radio" data-path="' + escapeHtml(path) + '"' + checked + " /></td>" +
+            '<td class="email-cell mono" title="' + escapeHtml(path) + '">' + escapeHtml(name) + "</td>" +
+            "<td>" + escapeHtml(String(item.count != null ? item.count : "-")) + "</td>" +
+            "<td>" + escapeHtml(formatRecycleTime(item.deleted_at || item.mtime)) + "</td>" +
+            "<td>" + escapeHtml(formatBackupSize(item.size)) + "</td>";
+          tbody.appendChild(tr);
         });
+        updateBackupSelectionUi();
+      }
 
-        log("accounts-log", data);
+      async function loadBackupList(options) {
+        options = options || {};
+        backupState.loading = true;
+        updateBackupSelectionUi();
+        try {
+          var data = await api(__adminUrl("api", "accounts", "backups") + "?limit=50");
+          var items = Array.isArray(data.backups) ? data.backups : [];
+          backupState.items = items;
+          if (backupState.selected) {
+            var keep = items.some(function (item) {
+              return String(item.path || item.name || "") === backupState.selected;
+            });
+            if (!keep) backupState.selected = items.length ? String(items[0].path || items[0].name || "") : "";
+          } else if (items.length) {
+            backupState.selected = String(items[0].path || items[0].name || "");
+          }
+          renderBackupTable();
+          if (!options.silent) log("accounts-log", data);
+          setBadge("accounts-status", items.length ? ("备份 " + items.length + " 个") : "暂无备份", items.length ? "warn" : "ok");
+          return data;
+        } finally {
+          backupState.loading = false;
+          updateBackupSelectionUi();
+        }
+      }
 
-        setBadge("accounts-status", "恢复完成", data.ok ? "ok" : "bad");
+      async function openBackupRestore() {
+        openBackupDialog();
+        setBadge("accounts-status", "读取备份列表", "warn");
+        try {
+          await loadBackupList();
+        } catch (err) {
+          setBadge("accounts-status", "备份列表读取失败", "bad");
+          toast((err && err.message) || "读取备份失败");
+          log("accounts-log", err && err.payload ? err.payload : {ok: false, error: (err && err.message) || "读取失败"});
+        }
+      }
 
-        toast("已恢复：" + (data.restored || 0));
+      async function restoreSelectedBackup() {
+        var path = String(backupState.selected || "").trim();
+        if (!path) {
+          toast("先选择一个备份文件");
+          return;
+        }
+        var overwrite = !!(el("backup-overwrite") && el("backup-overwrite").checked);
+        if (!confirm("从备份恢复账号？\\n文件：" + path + (overwrite ? "\\n将覆盖已存在同邮箱账号。" : "\\n已存在同邮箱账号会跳过。"))) return;
+        backupState.loading = true;
+        updateBackupSelectionUi();
+        setBadge("accounts-status", "恢复备份中", "warn");
+        try {
+          var data = await api(__adminUrl("api", "accounts", "restore-backup"), {
+            method: "POST",
+            body: JSON.stringify({backup_path: path, overwrite: overwrite})
+          });
+          log("accounts-log", data);
+          setBadge("accounts-status", "恢复完成", data.ok ? "ok" : "bad");
+          toast("已恢复：" + ((data.restored || 0) + (data.overwritten || 0)) +
+            (data.removed_from_recycle ? ("，同步清理回收站 " + data.removed_from_recycle) : ""));
+          closeBackupDialog();
+          await refreshAccounts();
+        } catch (err) {
+          setBadge("accounts-status", "恢复失败", "bad");
+          toast((err && err.message) || "恢复失败");
+          log("accounts-log", err && err.payload ? err.payload : {ok: false, error: (err && err.message) || "恢复失败"});
+        } finally {
+          backupState.loading = false;
+          updateBackupSelectionUi();
+        }
+      }
 
-        await refreshAccounts();
+      function bindBackupDialog() {
+        bind("backup-close", "click", closeBackupDialog);
+        bind("backup-refresh", "click", function () {
+          loadBackupList().catch(function (err) {
+            toast((err && err.message) || "刷新失败");
+          });
+        });
+        bind("backup-restore", "click", function () {
+          restoreSelectedBackup().catch(function (err) {
+            toast((err && err.message) || "恢复失败");
+          });
+        });
+        var tbody = el("backup-tbody");
+        if (tbody) {
+          tbody.addEventListener("change", function (ev) {
+            var target = ev.target;
+            if (!target || !target.classList || !target.classList.contains("backup-item-radio")) return;
+            backupState.selected = String(target.getAttribute("data-path") || "");
+            updateBackupSelectionUi();
+          });
+        }
+        var mask = el("backup-mask");
+        if (mask) {
+          mask.addEventListener("click", function (ev) {
+            if (ev.target === mask) closeBackupDialog();
+          });
+        }
+        document.addEventListener("keydown", function (ev) {
+          if (ev.key === "Escape") {
+            var m = el("backup-mask");
+            if (m && m.classList.contains("open")) closeBackupDialog();
+          }
+        });
+      }
 
+      async function restoreAccountBackup() {
+        await openBackupRestore();
       }
 
       async function pullRemoteStatus(mode) {
@@ -10842,6 +11046,8 @@
             remote_total: data.remote_total,
 
             remote_only_failures: data.remote_only_failures,
+            restored_from_recycle: data.restored_from_recycle,
+            generated_local_accounts: data.generated_local_accounts,
 
             matched_local: data.matched_local,
 
@@ -12149,7 +12355,12 @@ bind("upload-selected-cpa", "click", uploadSelectedCpa);
 
         bind("delete-selected", "click", deleteSelected);
         bind("restore-backup", "click", restoreAccountBackup);
-bind("export-account-txt", "click", exportAccountTxt);
+        bind("open-recycle", "click", function () {
+          openRecycleBin().catch(function (err) {
+            toast((err && err.message) || "打开回收站失败");
+          });
+        });
+        bind("export-account-txt", "click", exportAccountTxt);
         bind("export-cpa-accounts", "click", exportCpaAccounts);
 
         bind("convert-sso-selected", "click", convertSsoSelected);
@@ -12174,6 +12385,7 @@ bind("export-account-txt", "click", exportAccountTxt);
 
         bindOperationDialog();
         bindRecycleDialog();
+        bindBackupDialog();
 
         el("proxy").addEventListener("input", updateProxyCount);
 

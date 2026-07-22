@@ -7081,71 +7081,86 @@ def _is_remote_problem_classified(row: dict[str, Any]) -> bool:
     return bool(action or classification or http_status)
 
 
-def _create_cpa_remote_placeholder_accounts(rows: list[dict[str, Any]], *, source: str) -> int:
-    """Create local placeholder rows for CPA remote problem accounts missing locally."""
-    init_db()
-    now = time.time()
-    created = 0
+
+def _collect_problem_emails(rows: list[dict[str, Any]]) -> list[str]:
+    """Extract unique problem emails from classified remote rows."""
+    emails: list[str] = []
     seen: set[str] = set()
+    for row in rows or []:
+        if not isinstance(row, dict) or not _is_remote_problem_classified(row):
+            continue
+        email = str(row.get("email") or row.get("name") or "").strip().lower()
+        if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
+            continue
+        if email in seen:
+            continue
+        seen.add(email)
+        emails.append(email)
+    return emails
+
+
+def _auto_restore_problem_accounts_from_recycle(
+    rows: list[dict[str, Any]],
+    *,
+    source: str = "cpa_remote",
+) -> dict[str, Any]:
+    """When CPA reports problem accounts, restore matching soft-deleted local rows first."""
+    emails = _collect_problem_emails(rows)
+    if not emails:
+        return {
+            "ok": True,
+            "restored": 0,
+            "overwritten": 0,
+            "requested": 0,
+            "candidates": 0,
+            "emails": [],
+            "source": source,
+        }
+    init_db()
+    candidates: list[str] = []
     with _connect() as conn:
-        for row in rows:
-            if not isinstance(row, dict) or not _is_remote_problem_classified(row):
-                continue
-            email = str(row.get("email") or row.get("name") or "").strip().lower()
-            if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
-                continue
-            if email in seen:
-                continue
-            seen.add(email)
+        for email in emails:
             exists = conn.execute(
                 "SELECT 1 FROM accounts WHERE lower(email) = ? LIMIT 1",
                 (email,),
             ).fetchone()
             if exists:
                 continue
-            payload = json.dumps(
-                {
-                    "source": source,
-                    "email": email,
-                    "provider": "cpa",
-                    "remote_id": row.get("remote_id"),
-                    "file_name": row.get("file_name") or row.get("file_id") or row.get("auth_index"),
-                    "classification": row.get("classification"),
-                    "action": row.get("action"),
-                    "http_status": row.get("http_status"),
-                    "reason": row.get("reason") or row.get("status_message") or row.get("message"),
-                    "placeholder": True,
-                    "has_password": False,
-                    "has_sso": False,
-                    "has_auth": False,
-                },
-                ensure_ascii=False,
-            )
-            conn.execute(
-                """
-                INSERT INTO accounts(
-                  email, password, sso, auth_key, user_id, access_token, refresh_token, id_token,
-                  expires_at, oidc_issuer, oidc_client_id, grok2api_auth_path, cpa_auth_path,
-                  grok2api_auth_json, cpa_auth_json, status, batch_id, session_id,
-                  created_at, updated_at, raw_json, cpa_pushed, cpa_pushed_at
-                )
-                VALUES (?, '', '', ?, '', '', '', '', '', '', '', '', '', '', '',
-                        'remote_only', '', '', ?, ?, ?, 1, ?)
-                """,
-                (
-                    email,
-                    f"remote::cpa::{email}",
-                    now,
-                    now,
-                    payload,
-                    now,
-                ),
-            )
-            created += 1
-    return created
+            recycled = conn.execute(
+                "SELECT 1 FROM account_recycle_bin WHERE lower(email) = ? LIMIT 1",
+                (email,),
+            ).fetchone()
+            if recycled:
+                candidates.append(email)
+    if not candidates:
+        return {
+            "ok": True,
+            "restored": 0,
+            "overwritten": 0,
+            "requested": len(emails),
+            "candidates": 0,
+            "emails": [],
+            "source": source,
+        }
+    result = restore_accounts_from_recycle(
+        candidates,
+        restore_all=False,
+        overwrite=False,
+    )
+    result = dict(result or {})
+    result["source"] = source
+    result["candidates"] = len(candidates)
+    result["requested"] = len(emails)
+    return result
 
 
+def _create_cpa_remote_placeholder_accounts(rows: list[dict[str, Any]], *, source: str) -> int:
+    """Deprecated: no longer create remote_only local placeholders for CPA remote problems.
 
+    Kept as a no-op for backward compatibility. CPA sync restores from recycle bin when
+    possible and leaves unmatched remote problems as remote-only status rows.
+    """
+    return 0
 
 
 def sync_grok2api_remote_status(
@@ -9744,11 +9759,16 @@ def sync_cpa_remote_status(
 
 
 
-    generated_local_accounts = _create_cpa_remote_placeholder_accounts(
-
+    recycle_restore = _auto_restore_problem_accounts_from_recycle(
         classified_rows, source=f"cpa_remote_status:{mode_norm}"
-
     )
+    restored_from_recycle = int(
+        (recycle_restore.get("restored") or 0) + (recycle_restore.get("overwritten") or 0)
+    )
+
+    # Do not create remote_only local placeholders for CPA-missing emails.
+    # Prefer recycle-bin restore above; remaining remote-only failures stay as remote status.
+    generated_local_accounts = 0
 
 
 
@@ -9847,7 +9867,8 @@ def sync_cpa_remote_status(
         "remote_only_failures": remote_only_failures,
 
         "generated_local_accounts": generated_local_accounts,
-
+        "restored_from_recycle": restored_from_recycle,
+        "recycle_restore": recycle_restore,
         "seen_at": seen_at,
 
     }
@@ -13735,6 +13756,7 @@ def restore_accounts_from_backup(backup_path: str | None = None, *, overwrite: b
     skipped_existing = 0
     skipped_invalid = 0
     overwritten = 0
+    touched_emails: list[str] = []
     with _connect() as conn:
         columns = [str(row["name"]) for row in conn.execute("PRAGMA table_info(accounts)").fetchall()]
         insert_cols = list(columns)
@@ -13778,6 +13800,15 @@ def restore_accounts_from_backup(backup_path: str | None = None, *, overwrite: b
                 overwritten += 1
             else:
                 restored += 1
+            touched_emails.append(email)
+        removed_from_recycle = 0
+        if touched_emails:
+            placeholders_del = ",".join("?" for _ in touched_emails)
+            cur = conn.execute(
+                f"DELETE FROM account_recycle_bin WHERE lower(email) IN ({placeholders_del})",
+                touched_emails,
+            )
+            removed_from_recycle = int(cur.rowcount or 0)
     return {
         "ok": True,
         "backup_path": str(path),
@@ -13785,6 +13816,7 @@ def restore_accounts_from_backup(backup_path: str | None = None, *, overwrite: b
         "overwritten": overwritten,
         "skipped_existing": skipped_existing,
         "skipped_invalid": skipped_invalid,
+        "removed_from_recycle": removed_from_recycle,
         "total": len(rows),
         "overwrite": bool(overwrite),
     }
