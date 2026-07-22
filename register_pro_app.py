@@ -7075,6 +7075,30 @@ def _zip_auth_parts(parts: list[tuple[str, bytes]], *, filename_prefix: str) -> 
 
 
 
+
+def _export_sub2_zip_parts(
+    *,
+    emails: list[str] | None,
+    limit: int = 5000,
+) -> Response:
+    clean = _clean_emails(emails)
+    lim = max(1, min(5000, int(limit or 5000)))
+    if clean:
+        lim = max(1, min(5000, max(lim, len(clean))))
+    try:
+        parts = pro_store.list_sub2api_export_parts(limit=lim, emails=clean or None)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=str(exc)[:300]) from exc
+    if not parts:
+        detail = (
+            f"选中的 {len(clean)} 个账号没有可导出的 Sub2（需有 CPA Auth）"
+            if clean
+            else "没有可导出的 Sub2 数据（需有 CPA Auth）"
+        )
+        raise HTTPException(status_code=404, detail=detail)
+    return _zip_auth_parts(parts, filename_prefix="register-pro-sub2")
+
+
 def _export_auth_zip_parts(
 
     *,
@@ -7206,6 +7230,25 @@ async def export_cpa_zip_post(body: ExportAuthZipBody):
         limit=body.limit,
 
     )
+
+
+@app.get(_admin_path('api', 'accounts', 'register-email', 'export-sub2-zip'))
+async def export_sub2_zip_get(limit: int = 5000, emails: str | None = None):
+    email_list = [x.strip() for x in (emails or "").split(",") if x.strip()] or None
+    return await asyncio.to_thread(
+        _export_sub2_zip_parts, emails=email_list, limit=limit
+    )
+
+
+@app.post(_admin_path('api', 'accounts', 'register-email', 'export-sub2-zip'))
+async def export_sub2_zip_post(body: ExportAuthZipBody):
+    return await asyncio.to_thread(
+        _export_sub2_zip_parts,
+        emails=body.emails,
+        limit=body.limit,
+    )
+
+
 
 
 

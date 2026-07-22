@@ -8953,6 +8953,117 @@ def list_cpa_auth_parts(limit: int = 1000, *, emails: list[str] | None = None) -
 
 
 
+
+def list_sub2api_export_parts(
+    limit: int = 1000,
+    *,
+    emails: list[str] | None = None,
+    config: dict[str, Any] | None = None,
+) -> list[tuple[str, bytes]]:
+    """Build Sub2API import JSON parts from local CPA auth for selected/all accounts."""
+    cfg = normalize_sub2api_config(config or get_sub2api_config(include_key=True))
+    parts = list_cpa_auth_parts(limit=limit, emails=emails)
+    if not parts:
+        return []
+    try:
+        import cpa_to_sub2api as sub_mod  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(f"无法加载 cpa_to_sub2api: {exc}") from exc
+
+    push_cfg = _build_sub2api_push_cfg(cfg)
+    push = sub_mod.get_sub2api_push_settings(push_cfg)
+    out: list[tuple[str, bytes]] = []
+    seen: set[str] = set()
+    for filename, payload in parts:
+        raw = payload if isinstance(payload, (bytes, bytearray)) else str(payload).encode("utf-8")
+        auth_doc: dict[str, Any] | None = None
+        email_hint = ""
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+            if isinstance(parsed, dict):
+                auth_doc = parsed
+                email_hint = str(
+                    parsed.get("email")
+                    or parsed.get("Email")
+                    or (parsed.get("credentials") or {}).get("email")
+                    or ""
+                ).strip().lower()
+        except Exception:
+            auth_doc = None
+        if not email_hint:
+            email_hint = (
+                str(filename or "")
+                .replace("xai-", "")
+                .replace(".json", "")
+                .replace("_at_", "@")
+                .strip()
+                .lower()
+            )
+        if not isinstance(auth_doc, dict):
+            continue
+        if email_hint and not auth_doc.get("email"):
+            auth_doc = {**auth_doc, "email": email_hint}
+        try:
+            bundle = sub_mod.build_sub2api_export_bundle([auth_doc], push)
+        except Exception:
+            continue
+        safe = re.sub(r"[^a-zA-Z0-9@._-]+", "-", email_hint or "unknown").strip("-") or "unknown"
+        name = f"sub2api-account-xai-{safe}.json"
+        if name in seen:
+            stem, suffix = os.path.splitext(name)
+            name = f"{stem}-{len(seen) + 1}{suffix or '.json'}"
+        seen.add(name)
+        out.append((name, (json.dumps(bundle, ensure_ascii=False, indent=2) + "\n").encode("utf-8")))
+    return out
+
+
+def export_sub2api_bundle(
+    limit: int = 1000,
+    *,
+    emails: list[str] | None = None,
+    config: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build one combined Sub2API export bundle (accounts + proxies)."""
+    cfg = normalize_sub2api_config(config or get_sub2api_config(include_key=True))
+    parts = list_cpa_auth_parts(limit=limit, emails=emails)
+    if not parts:
+        return {"ok": False, "count": 0, "bundle": None, "error": "没有可导出的 CPA Auth"}
+    try:
+        import cpa_to_sub2api as sub_mod  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "count": 0, "bundle": None, "error": f"无法加载 cpa_to_sub2api: {exc}"}
+    push = sub_mod.get_sub2api_push_settings(_build_sub2api_push_cfg(cfg))
+    auth_items: list[dict[str, Any]] = []
+    for filename, payload in parts:
+        raw = payload if isinstance(payload, (bytes, bytearray)) else str(payload).encode("utf-8")
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+        except Exception:
+            continue
+        if not isinstance(parsed, dict):
+            continue
+        email_hint = str(
+            parsed.get("email")
+            or parsed.get("Email")
+            or (parsed.get("credentials") or {}).get("email")
+            or ""
+        ).strip().lower()
+        if not email_hint:
+            email_hint = (
+                str(filename or "").replace("xai-", "").replace(".json", "").replace("_at_", "@").strip().lower()
+            )
+        if email_hint and not parsed.get("email"):
+            parsed = {**parsed, "email": email_hint}
+        auth_items.append(parsed)
+    if not auth_items:
+        return {"ok": False, "count": 0, "bundle": None, "error": "CPA Auth 无法解析为 Sub2 格式"}
+    try:
+        bundle = sub_mod.build_sub2api_export_bundle(auth_items, push)
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "count": 0, "bundle": None, "error": str(exc)[:300]}
+    return {"ok": True, "count": len(auth_items), "bundle": bundle}
+
+
 def _verified_remote_import_emails(
 
     emails: list[str] | None,

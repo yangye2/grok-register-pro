@@ -3897,6 +3897,7 @@
               <button id="stop-probe" class="btn ghost" type="button">停止探测</button>
               <button id="export-account-txt" class="btn info" type="button" title="导出选中账号为 txt：email----password----sso（须先选中）">导出账号</button>
               <button id="export-cpa-accounts" class="btn" type="button" title="有选中则只导出选中；无选中则导出全部">导出 CPA</button>
+              <button id="export-sub2-accounts" class="btn" type="button" title="导出 Sub2API 导入格式 ZIP；有选中则只导出选中，无选中则导出全部（需有 CPA Auth）">导出 Sub2</button>
 
             </div>
 
@@ -11211,6 +11212,29 @@
 
       }
 
+      async function exportSub2Accounts() {
+        // Selected-first: if any rows checked, export only those. Empty selection = full pool.
+        var emails = selectedEmails();
+        setBadge("accounts-status", emails.length ? ("导出 Sub2 选中 " + emails.length + "…") : "导出 Sub2 全部…", "warn");
+        try {
+          var result = await downloadPostZip(
+            __adminUrl("api", "accounts", "register-email", "export-sub2-zip"),
+            {emails: emails.length ? emails : null, limit: emails.length ? emails.length : 5000},
+            "register-pro-sub2.zip"
+          );
+          var n = result.count != null ? result.count : (emails.length || "?");
+          setBadge("accounts-status", "已导出 Sub2 " + n, "ok");
+          toast(emails.length
+            ? ("已导出选中 " + n + " 个 Sub2")
+            : ("已导出全部 Sub2 " + n + " 个"));
+        } catch (err) {
+          setBadge("accounts-status", "Sub2 导出失败", "bad");
+          toast((err && err.message) || "Sub2 导出失败");
+          log("accounts-log", err && err.payload ? err.payload : {ok: false, error: (err && err.message) || "导出失败"});
+        }
+      }
+
+
       async function exportAccountTxt() {
         var emails = selectedEmails();
         if (!emails.length) {
@@ -12362,6 +12386,7 @@ bind("upload-selected-cpa", "click", uploadSelectedCpa);
         });
         bind("export-account-txt", "click", exportAccountTxt);
         bind("export-cpa-accounts", "click", exportCpaAccounts);
+        bind("export-sub2-accounts", "click", exportSub2Accounts);
 
         bind("convert-sso-selected", "click", convertSsoSelected);
 
