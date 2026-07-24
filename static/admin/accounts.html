@@ -3913,6 +3913,7 @@
 
               <button id="convert-sso-selected" class="btn" type="button" title="把选中账号的 SSO 转成 Grok2API/CPA Auth（device-flow）。仅 SSO / 待授权 账号适用">转 Auth/CPA</button>
 
+              <button id="upload-selected-grok2api" class="btn info" type="button" title="推送选中账号到 Grok2API（模式见设置→Grok2API 导入/导出格式）">推送 Grok2API</button>
               <button id="upload-selected-sub2api" class="btn info" type="button" title="推送选中账号到 Sub2API">推送 Sub2</button>
               <button id="upload-selected-cpa" class="btn info" type="button" title="推送选中账号到 CPA">推送 CPA</button>
 
@@ -12367,7 +12368,8 @@ async function exportSsoSelected() {
         bind("clear-selected", "click", clearSelected);
 
         bind("probe-selected", "click", probeSelected);
-bind("upload-selected-cpa", "click", uploadSelectedCpa);
+        bind("upload-selected-grok2api", "click", uploadSelectedGrok2api);
+        bind("upload-selected-cpa", "click", uploadSelectedCpa);
 
         bind("upload-selected-sub2api", "click", uploadSelectedSub2);
 
