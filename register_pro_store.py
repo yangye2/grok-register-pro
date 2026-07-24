@@ -5777,87 +5777,207 @@ def _is_cloudflare_block(raw: str) -> bool:
 
 
 
-def grok2api_login(base_url: str, username: str, password: str) -> str:
-
-    pwd = str(password or "")
-
-    if not pwd.strip() or set(pwd.strip()) == {"*"} or pwd.strip() == "********":
-
-        raise ValueError(
-
-            "Grok2API 管理员密码无效（空或仍是 **** 掩码）。"
-
-            "请在设置里重新输入真实密码并保存后再导入"
-
-        )
-
-    safe_base = require_safe_outbound_url(base_url, label="Grok2API 地址")
-
-    body = json.dumps({"username": username, "password": pwd}).encode()
-
-    req = urllib.request.Request(
-
-        safe_base.rstrip("/") + "/api/admin/v1/auth/login",
-
-        data=body,
-
-        headers={
-
-            "Content-Type": "application/json",
-
-            "Accept": "application/json",
-
-            "User-Agent": f"grok-register-pro/{CLI_VERSION}",
-
-        },
-
-        method="POST",
-
+def _grok2api_cf_block_message(action: str, status: int, raw: str) -> str:
+    detail = str(raw or "").replace(chr(10), " ").strip()[:240]
+    return (
+        f"Grok2API {action}被 Cloudflare 拦截 HTTP {status}（error 1010 / bot fight）。"
+        " 这是对接 chenyme/grok2api 公网地址时常见问题：登录小请求可能过，"
+        "multipart 导入更大更容易被拦。"
+        " 处理：1) 改用内网/直连 base_url（如 http://127.0.0.1:端口 或 docker 网络名）；"
+        " 2) Cloudflare 对 /api/admin/* 关闭 Bot Fight / 放行 API；"
+        " 3) 本机已优先用 curl_cffi Chrome TLS 伪装，仍拦则只能走 1/2。"
+        + (f" 详情：{detail}" if detail else "")
     )
 
+
+def _grok2api_browser_headers(
+    *,
+    base_url: str | None = None,
+    token: str | None = None,
+    content_type: str | None = None,
+    accept: str = "application/json",
+) -> dict[str, str]:
+    """Browser-like headers for chenyme/grok2api admin API behind Cloudflare."""
+    origin = ""
+    referer = ""
+    raw_base = str(base_url or "").strip()
+    if raw_base:
+        try:
+            parsed = urllib.parse.urlsplit(raw_base)
+            if parsed.scheme and parsed.netloc:
+                origin = urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, "", "", "")).rstrip("/")
+                referer = origin + "/"
+        except Exception:
+            origin = ""
+            referer = ""
+    headers = {
+        "Accept": accept,
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin",
+    }
+    if origin:
+        headers["Origin"] = origin
+    if referer:
+        headers["Referer"] = referer
+    if content_type:
+        headers["Content-Type"] = content_type
+    if token:
+        headers["Authorization"] = "Bearer " + str(token).strip()
+    return headers
+
+
+class _Grok2ApiHttpResponse:
+    """Minimal response adapter shared by curl_cffi and urllib."""
+
+    def __init__(self, status: int, headers: dict[str, str], body: bytes):
+        self.status = int(status)
+        self.status_code = int(status)
+        raw_headers = {str(k): str(v) for k, v in (headers or {}).items()}
+        self.headers = raw_headers
+        self._headers_l = {str(k).lower(): str(v) for k, v in raw_headers.items()}
+        self._body = body if isinstance(body, (bytes, bytearray)) else bytes(body or b"")
+        self._offset = 0
+
+    def getheader(self, name: str, default: str | None = None) -> str | None:
+        if name is None:
+            return default
+        return self._headers_l.get(str(name).lower(), default)
+
+    def read(self, n: int = -1) -> bytes:
+        if n is None or n < 0:
+            chunk = self._body[self._offset :]
+            self._offset = len(self._body)
+            return bytes(chunk)
+        chunk = self._body[self._offset : self._offset + n]
+        self._offset += len(chunk)
+        return bytes(chunk)
+
+    def __iter__(self):
+        data = self._body
+        start = 0
+        nl = bytes([10])
+        while start < len(data):
+            end = data.find(nl, start)
+            if end < 0:
+                yield data[start:]
+                break
+            yield data[start : end + 1]
+            start = end + 1
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
+def _grok2api_http_request(
+    method: str,
+    url: str,
+    *,
+    headers: dict[str, str],
+    data: bytes | None = None,
+    timeout: float = 45.0,
+) -> _Grok2ApiHttpResponse:
+    """POST/GET chenyme/grok2api admin APIs; prefer curl_cffi Chrome TLS for CF."""
+    method_u = str(method or "GET").strip().upper() or "GET"
+    timeout_f = max(5.0, float(timeout or 45.0))
+    hdrs = {str(k): str(v) for k, v in (headers or {}).items()}
+
     try:
+        from curl_cffi import requests as curl_requests  # type: ignore
+    except Exception:
+        curl_requests = None
 
-        with _urlopen(req, timeout=30) as resp:
+    if curl_requests is not None:
+        try:
+            resp = curl_requests.request(
+                method_u,
+                url,
+                headers=hdrs,
+                data=data,
+                timeout=timeout_f,
+                allow_redirects=False,
+                impersonate="chrome",
+            )
+            body = resp.content if isinstance(getattr(resp, "content", None), (bytes, bytearray)) else bytes(
+                str(getattr(resp, "text", "") or "").encode("utf-8", "replace")
+            )
+            raw_headers = {}
+            try:
+                raw_headers = dict(getattr(resp, "headers", {}) or {})
+            except Exception:
+                raw_headers = {}
+            return _Grok2ApiHttpResponse(int(getattr(resp, "status_code", 0) or 0), raw_headers, body)
+        except Exception as exc:  # noqa: BLE001
+            _ = exc
 
-            payload = json.loads(resp.read())
-
+    req = urllib.request.Request(url, data=data, headers=hdrs, method=method_u)
+    try:
+        with _urlopen(req, timeout=timeout_f) as resp:
+            body = resp.read()
+            status = int(getattr(resp, "status", 200) or 200)
+            raw_headers = {k: v for k, v in getattr(resp, "headers", {}).items()}
+            return _Grok2ApiHttpResponse(status, raw_headers, body)
     except urllib.error.HTTPError as exc:
+        body = exc.read() if hasattr(exc, "read") else b""
+        raw_headers = {}
+        try:
+            raw_headers = {k: v for k, v in getattr(exc, "headers", {}).items()}
+        except Exception:
+            raw_headers = {}
+        return _Grok2ApiHttpResponse(int(exc.code), raw_headers, body)
 
-        raw = exc.read().decode("utf-8", "replace")[:300]
 
-        code = int(exc.code)
-
+def grok2api_login(base_url: str, username: str, password: str) -> str:
+    pwd = str(password or "")
+    if not pwd.strip() or set(pwd.strip()) == {"*"} or pwd.strip() == "********":
+        raise ValueError(
+            "Grok2API 管理员密码无效（空或仍是 **** 掩码）。"
+            "请在设置里重新输入真实密码并保存后再导入"
+        )
+    safe_base = require_safe_outbound_url(base_url, label="Grok2API 地址")
+    body = json.dumps({"username": username, "password": pwd}).encode()
+    url = safe_base.rstrip("/") + "/api/admin/v1/auth/login"
+    resp = _grok2api_http_request(
+        "POST",
+        url,
+        headers=_grok2api_browser_headers(
+            base_url=safe_base,
+            content_type="application/json",
+            accept="application/json",
+        ),
+        data=body,
+        timeout=30.0,
+    )
+    raw = resp.read().decode("utf-8", "replace")
+    code = int(resp.status)
+    if code >= 400:
         if _is_cloudflare_block(raw):
-
-            raise RuntimeError(
-
-                f"Grok2API 登录被 Cloudflare 拦截 HTTP {code}（error 1010 / bot fight）。"
-
-                f" 请改用内网/直连地址，或在 CF 放行 /api/admin。详情：{raw}"
-
-            ) from exc
-
+            raise RuntimeError(_grok2api_cf_block_message("登录", code, raw))
         if code in {401, 403}:
-
             raise RuntimeError(
-
                 f"Grok2API 登录被拒绝 HTTP {code}：账号/密码错误，或密码曾被保存成 **** 掩码。"
-
-                f" 请打开设置重新输入真实密码并点保存。详情：{raw}"
-
-            ) from exc
-
-        raise RuntimeError(f"Grok2API 登录失败 HTTP {code}: {raw}") from exc
-
+                f" 请打开设置重新输入真实密码并点保存。详情：{raw[:300]}"
+            )
+        raise RuntimeError(f"Grok2API 登录失败 HTTP {code}: {raw[:300]}")
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        if _is_cloudflare_block(raw):
+            raise RuntimeError(_grok2api_cf_block_message("登录", code, raw)) from exc
+        raise RuntimeError(f"Grok2API 登录响应不是 JSON: {raw[:200]}") from exc
     token = (((payload.get("data") or {}).get("tokens") or {}).get("accessToken"))
-
     if not token:
-
         raise RuntimeError("Grok2API 登录成功但响应里没有 accessToken")
-
     return str(token)
-
-
 
 
 
@@ -5999,7 +6119,19 @@ def _read_grok2api_import_response(response) -> dict[str, Any]:
 
     """Read an import SSE stream only until its terminal ``complete`` event."""
 
-    content_type = str(response.headers.get("Content-Type") or "").lower()
+    content_type = ""
+    try:
+        if hasattr(response, "getheader"):
+            content_type = str(response.getheader("Content-Type") or response.getheader("content-type") or "")
+        if not content_type and hasattr(response, "headers"):
+            headers = response.headers
+            if hasattr(headers, "get"):
+                content_type = str(headers.get("Content-Type") or headers.get("content-type") or "")
+            elif isinstance(headers, dict):
+                content_type = str(headers.get("Content-Type") or headers.get("content-type") or "")
+    except Exception:
+        content_type = ""
+    content_type = content_type.lower()
 
     if "text/event-stream" not in content_type:
 
@@ -6265,31 +6397,102 @@ def classify_grok2api_account(item: dict[str, Any]) -> dict[str, Any]:
 
 def _grok2api_get_json(base_url: str, token: str, path: str, query: dict[str, Any], *, timeout: float) -> dict[str, Any]:
 
+
+
     url = base_url.rstrip("/") + path
+
+
 
     if query:
 
+
+
         url += "?" + urllib.parse.urlencode(query)
 
-    req = urllib.request.Request(
+
+
+    resp = _grok2api_http_request(
+
+
+
+        "GET",
+
+
 
         url,
 
-        headers={"Accept": "application/json", "Authorization": "Bearer " + token},
 
-        method="GET",
+
+        headers=_grok2api_browser_headers(base_url=base_url, token=token, accept="application/json"),
+
+
+
+        timeout=float(timeout or 30.0),
+
+
 
     )
 
-    with _urlopen(req, timeout=timeout) as resp:
 
-        payload = json.loads(resp.read())
+
+    raw = resp.read().decode("utf-8", "replace")
+
+
+
+    code = int(resp.status)
+
+
+
+    if code >= 400:
+
+
+
+        if _is_cloudflare_block(raw):
+
+
+
+            raise RuntimeError(_grok2api_cf_block_message("拉取账号", code, raw))
+
+
+
+        raise RuntimeError(f"Grok2API 请求失败 HTTP {code}: {raw[:300]}")
+
+
+
+    try:
+
+
+
+        payload = json.loads(raw)
+
+
+
+    except json.JSONDecodeError as exc:
+
+
+
+        if _is_cloudflare_block(raw):
+
+
+
+            raise RuntimeError(_grok2api_cf_block_message("拉取账号", code, raw)) from exc
+
+
+
+        raise RuntimeError("Grok2API 返回的账号列表不是 JSON 对象") from exc
+
+
 
     if not isinstance(payload, dict):
 
+
+
         raise RuntimeError("Grok2API 返回的账号列表不是 JSON 对象")
 
+
+
     return payload
+
 
 
 
@@ -10302,55 +10505,92 @@ def upload_grok2api_auth_files(
 
     token = (access_token or "").strip() or grok2api_login(cfg["base_url"], cfg["username"], cfg["password"])
 
+
+
     boundary = "----register-pro-grok2api-" + str(int(time.time()))
+
+
 
     body = _build_multipart_auth_parts(parts, boundary)
 
-    req = urllib.request.Request(
 
-        cfg["base_url"].rstrip("/") + "/api/admin/v1/accounts/import",
+
+    # chenyme/grok2api: POST /api/admin/v1/accounts/import (multipart field files|file)
+
+    url = cfg["base_url"].rstrip("/") + "/api/admin/v1/accounts/import"
+
+
+
+    resp = _grok2api_http_request(
+
+
+
+        "POST",
+
+
+
+        url,
+
+
+
+        headers=_grok2api_browser_headers(
+
+            base_url=cfg["base_url"],
+
+            token=token,
+
+
+
+            content_type="multipart/form-data; boundary=" + boundary,
+
+
+
+            accept="text/event-stream, application/json",
+
+
+
+        ),
+
+
 
         data=body,
 
-        headers={
 
-            "Authorization": "Bearer " + token,
 
-            "Content-Type": "multipart/form-data; boundary=" + boundary,
+        timeout=90.0,
 
-            "Content-Length": str(len(body)),
 
-        },
-
-        method="POST",
 
     )
 
-    try:
 
-        with _urlopen(req, timeout=45) as resp:
 
-            status = int(resp.status)
+    status = int(resp.status)
 
-            if status < 400:
 
-                result = _read_grok2api_import_response(resp)
-
-            else:
-
-                raw = resp.read()
-
-    except urllib.error.HTTPError as exc:
-
-        raw = exc.read()
-
-        status = int(exc.code)
 
     if status >= 400:
 
-        text = raw.decode("utf-8", "replace")
+
+
+        text = resp.read().decode("utf-8", "replace")
+
+
+
+        if _is_cloudflare_block(text):
+
+
+
+            raise RuntimeError(_grok2api_cf_block_message("导入", status, text))
+
+
 
         raise RuntimeError(f"Grok2API 导入失败 HTTP {status}: {text[:500]}")
+
+
+
+    result = _read_grok2api_import_response(resp)
+
 
     result.update(
 
@@ -10536,51 +10776,48 @@ def upload_grok2api_sso(
 
     )
 
-    req = urllib.request.Request(
+    # chenyme/grok2api: POST /api/admin/v1/accounts/web/import (SSO / web JSON)
 
-        cfg["base_url"].rstrip("/") + "/api/admin/v1/accounts/web/import",
+    url = cfg["base_url"].rstrip("/") + "/api/admin/v1/accounts/web/import"
+
+    resp = _grok2api_http_request(
+
+        "POST",
+
+        url,
+
+        headers=_grok2api_browser_headers(
+
+            base_url=cfg["base_url"],
+
+            token=token,
+
+            content_type="multipart/form-data; boundary=" + boundary,
+
+            accept="text/event-stream, application/json",
+
+        ),
 
         data=body,
 
-        headers={
-
-            "Authorization": "Bearer " + token,
-
-            "Content-Type": "multipart/form-data; boundary=" + boundary,
-
-            "Content-Length": str(len(body)),
-
-        },
-
-        method="POST",
+        timeout=90.0,
 
     )
 
-    try:
-
-        with _urlopen(req, timeout=45) as resp:
-
-            status = int(resp.status)
-
-            if status < 400:
-
-                result = _read_grok2api_import_response(resp)
-
-            else:
-
-                raw = resp.read()
-
-    except urllib.error.HTTPError as exc:
-
-        raw = exc.read()
-
-        status = int(exc.code)
+    status = int(resp.status)
 
     if status >= 400:
 
-        text = raw.decode("utf-8", "replace")
+        text = resp.read().decode("utf-8", "replace")
+
+        if _is_cloudflare_block(text):
+
+            raise RuntimeError(_grok2api_cf_block_message("SSO 导入", status, text))
 
         raise RuntimeError(f"Grok2API SSO 导入失败 HTTP {status}: {text[:500]}")
+
+    result = _read_grok2api_import_response(resp)
+
 
     result.update(
 
