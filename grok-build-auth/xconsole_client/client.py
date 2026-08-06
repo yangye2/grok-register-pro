@@ -360,8 +360,13 @@ class XConsoleAuthClient:
              from any chunk (likely still correct — the hash format is
              distinctive).
         """
-        # 1. collect all JS chunk URLs from the page
-        js_urls = list(set(re.findall(r'src="(/_next/static/chunks/[^"]+\.js)"', html)))
+        # 1. collect all JS chunk URLs from the page.
+        # x.ai now appends ?dpl=<deployment> to chunk URLs; require .js but allow
+        # an optional query string before the closing quote.
+        js_urls = list(set(re.findall(
+            r'(?:src|href)=["\'](/_next/static/chunks/[^"\']+\.js(?:\?[^"\']*)?)["\']',
+            html,
+        )))
         if self.debug:
             print(f"  [scrape] searching {len(js_urls)} JS chunks...")
         if not js_urls:
