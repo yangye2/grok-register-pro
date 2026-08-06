@@ -4067,8 +4067,6 @@ _REG_PROTECT_EMPTY_KEYS = frozenset(
 
         "proxy_username",
 
-        "proxy",
-
         "domain",
 
         "moemail_domain",

@@ -6342,7 +6342,7 @@ async def put_registration_config(body: RegistrationBody):
 
     # exclude_none=True so omitted fields do not wipe saved secrets; store also
 
-    # ignores blank strings for protected keys (api_key/domain/proxy/…).
+    # ignores blank strings for protected keys (api_key/domain/…); proxy is clearable.
 
     cfg = pro_store.set_registration_config(body.model_dump(exclude_none=True), replace=False)
 
