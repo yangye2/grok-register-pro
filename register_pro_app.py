@@ -5309,6 +5309,8 @@ async def list_accounts(
 
     remote: str = "",
 
+    push: str = "",
+
     summary: bool = False,
 
 ):
@@ -5333,6 +5335,8 @@ async def list_accounts(
 
         remote=remote,
 
+        push=push,
+
     )
 
 
@@ -5353,6 +5357,8 @@ async def list_account_emails(
 
     remote: str = "",
 
+    push: str = "",
+
     limit: int = 20000,
 
 ):
@@ -5370,6 +5376,8 @@ async def list_account_emails(
         probe=probe,
 
         remote=remote,
+
+        push=push,
 
         limit=limit,
 

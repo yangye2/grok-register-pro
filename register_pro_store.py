@@ -7700,6 +7700,14 @@ def sync_grok2api_remote_status(
 
     }
 
+    push_mark: dict[str, Any] = {"ok": True, "updated": 0, "skipped": "not_full_mode"}
+    if mode_norm == "full":
+        try:
+            push_mark = _mark_pushed_from_remote_full_pull(backend="grok2api")
+        except Exception as exc:  # noqa: BLE001
+            push_mark = {"ok": False, "updated": 0, "error": str(exc)[:200]}
+    summary["push_marked"] = push_mark
+
     _set_json_setting("grok2api_last_remote_sync", summary)
 
     # Rebuild lightweight dashboard cache once after remote pull — not on every list.
@@ -7957,6 +7965,98 @@ def mark_accounts_pushed(
         updated = int(cur.rowcount or 0)
 
     return {"ok": True, "updated": updated, "emails": clean}
+
+
+
+def _mark_pushed_from_remote_full_pull(*, backend: str) -> dict[str, Any]:
+
+    """After full remote inventory pull, mark local matches as already pushed.
+
+
+
+    Only meaningful for full mirror (complete remote inventory). Does not clear
+
+    flags for accounts missing on remote. Sub2 is not covered by remote-status.
+
+    """
+
+    backend_n = str(backend or "").strip().lower()
+
+    if backend_n not in {"grok2api", "cpa"}:
+
+        return {"ok": True, "updated": 0, "backend": backend_n, "skipped": "unsupported_backend"}
+
+    init_db()
+
+    with _connect() as conn:
+
+        if backend_n == "cpa":
+
+            rows = conn.execute(
+
+                """
+
+                SELECT DISTINCT lower(a.email) AS e
+
+                FROM accounts a
+
+                INNER JOIN remote_accounts r ON lower(r.email) = lower(a.email)
+
+                WHERE r.provider = 'cpa'
+
+                  AND r.remote_id NOT LIKE 'local-upload::%'
+
+                """
+
+            ).fetchall()
+
+        else:
+
+            providers = list(GROK2API_PROVIDERS)
+
+            placeholders = ",".join("?" for _ in providers)
+
+            rows = conn.execute(
+
+                f"""
+
+                SELECT DISTINCT lower(a.email) AS e
+
+                FROM accounts a
+
+                INNER JOIN remote_accounts r ON lower(r.email) = lower(a.email)
+
+                WHERE r.provider IN ({placeholders})
+
+                  AND r.remote_id NOT LIKE 'local-upload::%'
+
+                """,
+
+                providers,
+
+            ).fetchall()
+
+    emails = [str(r["e"] or "").strip().lower() for r in rows if str(r["e"] or "").strip()]
+
+    if not emails:
+
+        return {"ok": True, "updated": 0, "backend": backend_n, "matched": 0}
+
+    if backend_n == "cpa":
+
+        result = mark_accounts_pushed(emails, cpa=True)
+
+    else:
+
+        result = mark_accounts_pushed(emails, grok2api=True)
+
+    result = dict(result or {})
+
+    result["backend"] = backend_n
+
+    result["matched"] = len(emails)
+
+    return result
 
 
 
@@ -10185,6 +10285,14 @@ def sync_cpa_remote_status(
 
     }
 
+    push_mark: dict[str, Any] = {"ok": True, "updated": 0, "skipped": "not_full_mode"}
+    if mode_norm == "full":
+        try:
+            push_mark = _mark_pushed_from_remote_full_pull(backend="cpa")
+        except Exception as exc:  # noqa: BLE001
+            push_mark = {"ok": False, "updated": 0, "error": str(exc)[:200]}
+    summary["push_marked"] = push_mark
+
     _set_json_setting("cpa_last_remote_sync", summary)
 
     try:
@@ -11811,6 +11919,8 @@ def _account_list_query(
 
     remote: str = "",
 
+    push: str = "",
+
 ) -> tuple[str, list[Any], str, str, float]:
 
     """Shared filter/sort SQL for list_accounts / list_account_emails.
@@ -12089,6 +12199,36 @@ def _account_list_query(
 
 
 
+    # Local push flags (set after successful Grok2API / CPA / Sub2API upload).
+
+    push_key = str(push or "").strip().lower().replace("-", "_")
+
+    if push_key in {"grok2api_pushed", "pushed_grok2api", "已推grok2", "已推grok2api"}:
+
+        where_parts.append("IFNULL(a.grok2api_pushed, 0) = 1")
+
+    elif push_key in {"grok2api_unpushed", "unpushed_grok2api", "未推grok2", "未推grok2api"}:
+
+        where_parts.append("IFNULL(a.grok2api_pushed, 0) = 0")
+
+    elif push_key in {"cpa_pushed", "pushed_cpa", "已推cpa"}:
+
+        where_parts.append("IFNULL(a.cpa_pushed, 0) = 1")
+
+    elif push_key in {"cpa_unpushed", "unpushed_cpa", "未推cpa"}:
+
+        where_parts.append("IFNULL(a.cpa_pushed, 0) = 0")
+
+    elif push_key in {"sub2_pushed", "pushed_sub2", "sub2api_pushed", "已推sub2", "已推sub2api"}:
+
+        where_parts.append("IFNULL(a.sub2_pushed, 0) = 1")
+
+    elif push_key in {"sub2_unpushed", "unpushed_sub2", "sub2api_unpushed", "未推sub2", "未推sub2api"}:
+
+        where_parts.append("IFNULL(a.sub2_pushed, 0) = 0")
+
+
+
     where_sql = ("WHERE " + " AND ".join(where_parts)) if where_parts else ""
 
     sort_key = str(sort or "newest").strip().lower()
@@ -12145,6 +12285,8 @@ def list_account_emails(
 
     remote: str = "",
 
+    push: str = "",
+
     limit: int = 20000,
 
 ) -> dict[str, Any]:
@@ -12155,7 +12297,7 @@ def list_account_emails(
 
     where_sql, args, remote_join, order, _remote_synced_at = _account_list_query(
 
-        q=q, sort=sort, status=status, probe=probe, remote=remote
+        q=q, sort=sort, status=status, probe=probe, remote=remote, push=push
 
     )
 
@@ -12249,6 +12391,8 @@ def list_accounts(
 
     remote: str = "",
 
+    push: str = "",
+
 ) -> dict[str, Any]:
 
     """List accounts with DB-wide filters/sort/pagination.
@@ -12262,6 +12406,10 @@ def list_accounts(
       - probe:  ok | failed | untested
 
       - remote: not_imported | not_synced | relogin | wait | failed | ok
+
+      - push:   grok2api_pushed | grok2api_unpushed | cpa_pushed | cpa_unpushed |
+
+                sub2_pushed | sub2_unpushed
 
 
 
@@ -12287,7 +12435,7 @@ def list_accounts(
 
     where_sql, args, remote_join, order, remote_synced_at = _account_list_query(
 
-        q=q, sort=sort, status=status, probe=probe, remote=remote
+        q=q, sort=sort, status=status, probe=probe, remote=remote, push=push
 
     )
 

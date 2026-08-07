@@ -1579,13 +1579,25 @@
 
     .accounts-filters > div {
 
-      min-width: 118px;
+      min-width: 96px;
+
+      flex: 0 1 auto;
 
     }
 
     .accounts-filters .search-field {
 
-      min-width: 260px;
+      min-width: 120px;
+
+      max-width: 160px;
+
+      flex: 0 1 140px;
+
+    }
+
+    .accounts-filters .search-field input {
+
+      width: 100%;
 
     }
 
@@ -1791,25 +1803,41 @@
 
       width: 100%;
 
-      min-width: 960px;
+      min-width: 1080px;
 
       table-layout: fixed;
 
     }
 
-    /* 6 columns: check | email | status | probe | remote | created */
+    /* 7 columns: check | email | status | probe | remote | push | created */
 
     .account-table col.col-check { width: 36px; }
 
-    .account-table col.col-email { width: 28%; }
+    .account-table col.col-email { width: 24%; }
 
-    .account-table col.col-status { width: 92px; }
+    .account-table col.col-status { width: 84px; }
 
-    .account-table col.col-probe { width: 96px; }
+    .account-table col.col-probe { width: 88px; }
 
-    .account-table col.col-remote { width: 140px; }
+    .account-table col.col-remote { width: 120px; }
 
-    .account-table col.col-created { width: 120px; }
+    .account-table col.col-push { width: 148px; }
+
+    .account-table col.col-created { width: 110px; }
+
+    .account-table .push-platforms-cell {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-content: flex-start;
+      align-items: center;
+    }
+
+    .account-table .push-platforms-cell .badge {
+      min-height: 18px;
+      padding: 1px 6px;
+      font-size: 10px;
+    }
 
     .account-table tr.is-selected td {
 
@@ -2916,8 +2944,19 @@
       align-items: flex-end;
       gap: 8px;
     }
-    .accounts-filters > div { min-width: 118px; }
-    .accounts-filters .search-field { min-width: 240px; flex: 1 1 220px; }
+    .accounts-filters {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      min-width: 0;
+    }
+    .accounts-filters > div { min-width: 96px; flex: 0 1 auto; }
+    .accounts-filters .search-field {
+      min-width: 120px;
+      max-width: 160px;
+      flex: 0 1 140px;
+    }
+    .accounts-filters .search-field input { width: 100%; }
+    .accounts-filters select { max-width: 118px; }
     .accounts-probe-settings { justify-content: flex-end; }
     .accounts-probe-settings > div { width: 128px; }
     .accounts-bottom-actions {
@@ -3740,7 +3779,7 @@
 
               <label for="account-filter-q">搜索</label>
 
-              <input id="account-filter-q" placeholder="邮箱、ID、批次" autocomplete="off" />
+               <input id="account-filter-q" placeholder="邮箱/ID" autocomplete="off" />
 
             </div>
 
@@ -3811,6 +3850,30 @@
                 <option value="failed">异常</option>
 
                 <option value="ok">正常</option>
+
+              </select>
+
+            </div>
+
+            <div>
+
+              <label for="account-filter-push" title="本地推送标记（成功推送后写入，与远端 inventory 无关）">推送状态</label>
+
+              <select id="account-filter-push" title="按本地 cpa/sub2/grok2api_pushed 筛选">
+
+                <option value="">全部</option>
+
+                <option value="grok2api_unpushed">未推 Grok2</option>
+
+                <option value="grok2api_pushed">已推 Grok2</option>
+
+                <option value="cpa_unpushed">未推 CPA</option>
+
+                <option value="cpa_pushed">已推 CPA</option>
+
+                <option value="sub2_unpushed">未推 Sub2</option>
+
+                <option value="sub2_pushed">已推 Sub2</option>
 
               </select>
 
@@ -3960,6 +4023,8 @@
 
                   <col class="col-remote">
 
+                  <col class="col-push">
+
                   <col class="col-created">
 
                 </colgroup>
@@ -3978,6 +4043,8 @@
 
                     <th><button class="sort-head" type="button" data-sort-field="remote" data-sort-order="asc">远端状态 <span class="sort-indicator" aria-hidden="true">&#8597;</span></button></th>
 
+                    <th>推送平台</th>
+
                     <th><button class="sort-head" type="button" data-sort-field="created_at" data-sort-order="desc">创建时间 <span class="sort-indicator" aria-hidden="true">&#8595;</span></button></th>
 
                   </tr>
@@ -3986,7 +4053,7 @@
 
                 <tbody id="accounts-body">
 
-                  <tr><td colspan="6" class="empty">加载中</td></tr>
+                  <tr><td colspan="7" class="empty">加载中</td></tr>
 
                 </tbody>
 
@@ -9021,6 +9088,8 @@
 
         var remote = encodeURIComponent(value("account-filter-remote") || "");
 
+        var push = encodeURIComponent(value("account-filter-push") || "");
+
         var sort = (accountState.sortField === "remote" || accountState.sortField === "probe" || accountState.sortField === "status")
 
           ? (accountState.sortField + "_" + accountState.sortOrder)
@@ -9043,7 +9112,9 @@
 
           "&probe=" + probe +
 
-          "&remote=" + remote
+          "&remote=" + remote +
+
+          "&push=" + push
 
         );
 
@@ -9085,7 +9156,7 @@
 
         if (!accounts.length) {
 
-          body.innerHTML = '<tr><td colspan="6" class="empty">暂无账号</td></tr>';
+          body.innerHTML = '<tr><td colspan="7" class="empty">暂无账号</td></tr>';
 
           syncSelectionUi();
 
@@ -9114,6 +9185,8 @@
             cell(probeCell(acc.last_probe), "probe-cell-wrap") +
 
             cell(remoteCell(acc), "probe-cell-wrap") +
+
+            cell(pushPlatformsCell(acc), "push-cell-wrap") +
 
             cell(dateCell(acc.created_at, true), "date-cell") +
 
@@ -9307,6 +9380,8 @@
 
         var remote = encodeURIComponent(value("account-filter-remote") || "");
 
+        var push = encodeURIComponent(value("account-filter-push") || "");
+
         var sort = accountState.sortField + "_" + accountState.sortOrder;
 
         return "sort=" + encodeURIComponent(sort) +
@@ -9317,7 +9392,9 @@
 
           "&probe=" + probe +
 
-          "&remote=" + remote;
+          "&remote=" + remote +
+
+          "&push=" + push;
 
       }
 
@@ -9633,6 +9710,24 @@
 
         return '<span class="auth-data-cell">' + (sso + grok + cpa || '<span class="muted">无</span>') + '</span>';
 
+      }
+
+      function pushPlatformsCell(acc) {
+        var flags = (acc && acc.push_flags) || {};
+        var tags = [];
+        if (flags.cpa_pushed || Number(acc && acc.cpa_pushed) === 1) {
+          tags.push('<span class="badge ok" title="已推送 CPA">CPA</span>');
+        }
+        if (flags.sub2_pushed || Number(acc && acc.sub2_pushed) === 1) {
+          tags.push('<span class="badge ok" title="已推送 Sub2">Sub2</span>');
+        }
+        if (flags.grok2api_pushed || Number(acc && acc.grok2api_pushed) === 1) {
+          tags.push('<span class="badge ok" title="已推送 Grok2">Grok2</span>');
+        }
+        if (!tags.length) {
+          return '<span class="push-platforms-cell"><span class="muted">未推</span></span>';
+        }
+        return '<span class="push-platforms-cell">' + tags.join("") + '</span>';
       }
 
       function dateCell(value, compact) {
@@ -11527,7 +11622,7 @@ async function exportSsoSelected() {
 
         var searchTimer = null;
 
-        ["account-filter-q", "account-filter-status", "account-filter-probe", "account-filter-remote"].forEach(function (id) {
+        ["account-filter-q", "account-filter-status", "account-filter-probe", "account-filter-remote", "account-filter-push"].forEach(function (id) {
 
           var node = el(id);
 
@@ -11584,6 +11679,8 @@ async function exportSsoSelected() {
           setValue("account-filter-probe", "");
 
           setValue("account-filter-remote", "");
+
+          setValue("account-filter-push", "");
 
           accountState.page = 1;
 
