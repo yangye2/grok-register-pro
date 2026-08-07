@@ -11050,9 +11050,12 @@ def _bot_flag_from_token(token: str) -> int:
 
 def _extract_bot_flag(item: dict[str, Any]) -> int:
     """Read bot flag from OAuth access_token or stored auth JSON documents."""
+    # direct from access_token
     direct = _bot_flag_from_token(str(item.get("access_token") or ""))
     if direct > 0:
         return direct
+
+    # fallback to stored auth JSON documents
     for field in ("grok2api_auth_json", "cpa_auth_json", "raw_json"):
         raw = item.get(field)
         if not raw:
@@ -11065,20 +11068,30 @@ def _extract_bot_flag(item: dict[str, Any]) -> int:
                 continue
         if not isinstance(data, dict):
             continue
+
+        # try top-level btf/bot_flag_source first
+        for key in ("btf", "bot_flag_source"):
+            val = data.get(key)
+            if val is not None and val != "":
+                try:
+                    v = int(val)
+                    if v > 0:
+                        return v
+                except (TypeError, ValueError):
+                    continue
+
+        # fallback to JWT in access_token/key/token inside the document
         token = str(
-            data.get("access_token")
-            or data.get("key")
-            or data.get("token")
-            or ""
+            data.get("access_token") or data.get("key") or data.get("token") or ""
         ).strip()
         if not token and isinstance(data.get("credentials"), dict):
             creds = data["credentials"]
             token = str(
                 creds.get("access_token") or creds.get("key") or creds.get("token") or ""
             ).strip()
-        flag = _bot_flag_from_token(token)
-        if flag > 0:
-            return flag
+        jwt_flag = _bot_flag_from_token(token)
+        if jwt_flag > 0:
+            return jwt_flag
     return 0
 
 
