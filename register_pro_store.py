@@ -11028,11 +11028,12 @@ def _jwt_payload(token: str) -> dict[str, Any]:
 
 
 def _bot_flag_from_token(token: str) -> int:
-    """Parse JWT access_token payload for btf / bot_flag_source (>0 => bot)."""
+    """Parse JWT access_token payload for bfs / btf / bot_flag_source (>0 => bot)."""
     payload = _jwt_payload(str(token or "").strip())
     if not payload:
         return 0
-    for key in ("btf", "bot_flag_source"):
+    # Real xAI AT uses short key ``bfs``; also accept btf / bot_flag_source.
+    for key in ("bfs", "btf", "bot_flag_source"):
         raw = payload.get(key)
         if raw is None or raw == "":
             continue
@@ -11069,8 +11070,8 @@ def _extract_bot_flag(item: dict[str, Any]) -> int:
         if not isinstance(data, dict):
             continue
 
-        # try top-level btf/bot_flag_source first
-        for key in ("btf", "bot_flag_source"):
+        # try top-level bfs/btf/bot_flag_source first
+        for key in ("bfs", "btf", "bot_flag_source"):
             val = data.get(key)
             if val is not None and val != "":
                 try:

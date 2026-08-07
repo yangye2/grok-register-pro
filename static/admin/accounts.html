@@ -4066,7 +4066,7 @@
 
                     <th>推送平台</th>
 
-                    <th title="JWT access_token 中 btf / bot_flag_source">机器人</th>
+                    <th title="JWT access_token 中 bfs / btf / bot_flag_source">机器人</th>
 
                     <th><button class="sort-head" type="button" data-sort-field="created_at" data-sort-order="desc">创建时间 <span class="sort-indicator" aria-hidden="true">&#8595;</span></button></th>
 
@@ -9760,7 +9760,7 @@
         if (!Number.isFinite(n) || n <= 0) {
           return '<span class="muted">-</span>';
         }
-        return '<span class="bot-flag-cell is-bot" title="JWT btf / bot_flag_source = ' + escapeHtml(n) + '">' +
+        return '<span class="bot-flag-cell is-bot" title="JWT bfs / btf / bot_flag_source = ' + escapeHtml(n) + '">' +
           '<span class="bot-flag-icon" aria-hidden="true">🤖</span>' +
           '<span>' + escapeHtml(n) + '</span>' +
           '</span>';
