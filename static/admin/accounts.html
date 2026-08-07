@@ -1803,27 +1803,29 @@
 
       width: 100%;
 
-      min-width: 1080px;
+      min-width: 1160px;
 
       table-layout: fixed;
 
     }
 
-    /* 7 columns: check | email | status | probe | remote | push | created */
+    /* 8 columns: check | email | status | probe | remote | push | bot | created */
 
     .account-table col.col-check { width: 36px; }
 
-    .account-table col.col-email { width: 24%; }
+    .account-table col.col-email { width: 22%; }
 
-    .account-table col.col-status { width: 84px; }
+    .account-table col.col-status { width: 80px; }
 
-    .account-table col.col-probe { width: 88px; }
+    .account-table col.col-probe { width: 84px; }
 
-    .account-table col.col-remote { width: 120px; }
+    .account-table col.col-remote { width: 112px; }
 
-    .account-table col.col-push { width: 148px; }
+    .account-table col.col-push { width: 132px; }
 
-    .account-table col.col-created { width: 110px; }
+    .account-table col.col-bot { width: 88px; }
+
+    .account-table col.col-created { width: 104px; }
 
     .account-table .push-platforms-cell {
       display: flex;
@@ -1837,6 +1839,23 @@
       min-height: 18px;
       padding: 1px 6px;
       font-size: 10px;
+    }
+
+    .account-table .bot-flag-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      font-weight: 650;
+    }
+
+    .account-table .bot-flag-cell.is-bot {
+      color: var(--btn-danger-text, #f85149);
+    }
+
+    .account-table .bot-flag-icon {
+      font-size: 14px;
+      line-height: 1;
     }
 
     .account-table tr.is-selected td {
@@ -4025,6 +4044,8 @@
 
                   <col class="col-push">
 
+                  <col class="col-bot">
+
                   <col class="col-created">
 
                 </colgroup>
@@ -4045,6 +4066,8 @@
 
                     <th>推送平台</th>
 
+                    <th title="JWT access_token 中 btf / bot_flag_source">机器人</th>
+
                     <th><button class="sort-head" type="button" data-sort-field="created_at" data-sort-order="desc">创建时间 <span class="sort-indicator" aria-hidden="true">&#8595;</span></button></th>
 
                   </tr>
@@ -4053,7 +4076,7 @@
 
                 <tbody id="accounts-body">
 
-                  <tr><td colspan="7" class="empty">加载中</td></tr>
+                  <tr><td colspan="8" class="empty">加载中</td></tr>
 
                 </tbody>
 
@@ -9156,7 +9179,7 @@
 
         if (!accounts.length) {
 
-          body.innerHTML = '<tr><td colspan="7" class="empty">暂无账号</td></tr>';
+          body.innerHTML = '<tr><td colspan="8" class="empty">暂无账号</td></tr>';
 
           syncSelectionUi();
 
@@ -9187,6 +9210,8 @@
             cell(remoteCell(acc), "probe-cell-wrap") +
 
             cell(pushPlatformsCell(acc), "push-cell-wrap") +
+
+            cell(botFlagCell(acc), "bot-cell-wrap") +
 
             cell(dateCell(acc.created_at, true), "date-cell") +
 
@@ -9728,6 +9753,17 @@
           return '<span class="push-platforms-cell"><span class="muted">未推</span></span>';
         }
         return '<span class="push-platforms-cell">' + tags.join("") + '</span>';
+      }
+
+      function botFlagCell(acc) {
+        var n = Number(acc && acc.bot_flag);
+        if (!Number.isFinite(n) || n <= 0) {
+          return '<span class="muted">-</span>';
+        }
+        return '<span class="bot-flag-cell is-bot" title="JWT btf / bot_flag_source = ' + escapeHtml(n) + '">' +
+          '<span class="bot-flag-icon" aria-hidden="true">🤖</span>' +
+          '<span>' + escapeHtml(n) + '</span>' +
+          '</span>';
       }
 
       function dateCell(value, compact) {

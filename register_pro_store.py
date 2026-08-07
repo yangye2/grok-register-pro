@@ -11025,6 +11025,64 @@ def _jwt_payload(token: str) -> dict[str, Any]:
 
 
 
+
+
+def _bot_flag_from_token(token: str) -> int:
+    """Parse JWT access_token payload for btf / bot_flag_source (>0 => bot)."""
+    payload = _jwt_payload(str(token or "").strip())
+    if not payload:
+        return 0
+    for key in ("btf", "bot_flag_source"):
+        raw = payload.get(key)
+        if raw is None or raw == "":
+            continue
+        try:
+            val = int(raw)
+        except (TypeError, ValueError):
+            try:
+                val = int(float(raw))
+            except (TypeError, ValueError):
+                continue
+        if val > 0:
+            return val
+    return 0
+
+
+def _extract_bot_flag(item: dict[str, Any]) -> int:
+    """Read bot flag from OAuth access_token or stored auth JSON documents."""
+    direct = _bot_flag_from_token(str(item.get("access_token") or ""))
+    if direct > 0:
+        return direct
+    for field in ("grok2api_auth_json", "cpa_auth_json", "raw_json"):
+        raw = item.get(field)
+        if not raw:
+            continue
+        data = raw
+        if isinstance(raw, str):
+            try:
+                data = json.loads(raw)
+            except Exception:
+                continue
+        if not isinstance(data, dict):
+            continue
+        token = str(
+            data.get("access_token")
+            or data.get("key")
+            or data.get("token")
+            or ""
+        ).strip()
+        if not token and isinstance(data.get("credentials"), dict):
+            creds = data["credentials"]
+            token = str(
+                creds.get("access_token") or creds.get("key") or creds.get("token") or ""
+            ).strip()
+        flag = _bot_flag_from_token(token)
+        if flag > 0:
+            return flag
+    return 0
+
+
+
 def _iso_from_expires_at(value: Any) -> str:
 
     if value is None or value == "":
@@ -12541,6 +12599,8 @@ def list_accounts(
 
         item.pop("password", None)
 
+        item["bot_flag"] = _extract_bot_flag(item)
+
         item.pop("access_token", None)
 
         item.pop("refresh_token", None)
@@ -12638,6 +12698,7 @@ def list_accounts(
             }
 
         accounts.append(item)
+
 
     total_pages = max(1, (total + page_size - 1) // page_size)
 
